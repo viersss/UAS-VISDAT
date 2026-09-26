@@ -1,0 +1,63 @@
+Sektor_Utama,Sub_Sektor,Rincian,Nilai_PDB_Miliar_Rupiah,Kontribusi_PDB_Persen
+"A. Pertanian, Kehutanan, dan Perikanan",,,2791665.2,13.176
+"A. Pertanian, Kehutanan, dan Perikanan","1. Pertanian, Peternakan, Perburuan dan Jasa Pertanian",,2107418.5,9.947
+"A. Pertanian, Kehutanan, dan Perikanan","1. Pertanian, Peternakan, Perburuan dan Jasa Pertanian",a. Tanaman Pangan,485746.3,2.293
+"A. Pertanian, Kehutanan, dan Perikanan","1. Pertanian, Peternakan, Perburuan dan Jasa Pertanian",b. Tanaman Hortikultura,308596.7,1.457
+"A. Pertanian, Kehutanan, dan Perikanan","1. Pertanian, Peternakan, Perburuan dan Jasa Pertanian",c. Tanaman Perkebunan,922343.5,4.353
+"A. Pertanian, Kehutanan, dan Perikanan","1. Pertanian, Peternakan, Perburuan dan Jasa Pertanian",d. Peternakan,349843.9,1.651
+"A. Pertanian, Kehutanan, dan Perikanan","1. Pertanian, Peternakan, Perburuan dan Jasa Pertanian",e. Jasa Pertanian dan Perburuan,40888.1,0.193
+"A. Pertanian, Kehutanan, dan Perikanan",2. Kehutanan dan Penebangan Kayu,,129569.5,0.612
+"A. Pertanian, Kehutanan, dan Perikanan",3. Perikanan,,554677.2,2.618
+B. Pertambangan dan Penggalian,,,2026589.2,9.565
+B. Pertambangan dan Penggalian,"1. Pertambangan Minyak, Gas dan Panas Bumi",,526155.8,2.483
+B. Pertambangan dan Penggalian,2. Pertambangan Batubara dan Lignit,,850453.5,4.014
+B. Pertambangan dan Penggalian,3. Pertambangan Bijih Logam,,343501.9,1.621
+B. Pertambangan dan Penggalian,4. Pertambangan dan Penggalian Lainnya,,306478.0,1.447
+C. Industri Pengolahan,,,4202866.9,19.837
+C. Industri Pengolahan,1. Industri Batubara dan Pengilangan Migas,,403577.6,1.905
+C. Industri Pengolahan,Industri Pengolahan Non Migas,,3799289.3,17.932
+C. Industri Pengolahan,Industri Pengolahan Non Migas,1. Industri Makanan dan Minuman,1531445.2,7.228
+C. Industri Pengolahan,Industri Pengolahan Non Migas,2. Industri Pengolahan Tembakau,158725.2,0.749
+C. Industri Pengolahan,Industri Pengolahan Non Migas,3. Industri Tekstil dan Pakaian Jadi,218208.0,1.03
+C. Industri Pengolahan,Industri Pengolahan Non Migas,"4. Industri Kulit, Barang dari Kulit dan Alas Kaki",53533.1,0.253
+C. Industri Pengolahan,Industri Pengolahan Non Migas,"5. Industri Kayu, Barang dari Kayu dan Gabus dan Barang Anyaman dari Bambu, Rotan dan Sejenisnya",85568.4,0.404
+C. Industri Pengolahan,Industri Pengolahan Non Migas,6. Industri Kertas dan Barang dari Kertas; Percetakan dan Reproduksi Media Rekaman,148948.1,0.703
+C. Industri Pengolahan,Industri Pengolahan Non Migas,"7. Industri Kimia, Farmasi dan Obat Tradisional",395113.4,1.865
+C. Industri Pengolahan,Industri Pengolahan Non Migas,"8. Industri Karet, Barang dari Karet dan Plastik",88336.9,0.417
+C. Industri Pengolahan,Industri Pengolahan Non Migas,9. Industri Barang Galian bukan Logam,100359.0,0.474
+C. Industri Pengolahan,Industri Pengolahan Non Migas,10. Industri Logam Dasar,226393.4,1.069
+C. Industri Pengolahan,Industri Pengolahan Non Migas,"11. Industri Barang Logam; Komputer, Barang Elektronik, Optik; dan Peralatan Listrik",355983.5,1.68
+C. Industri Pengolahan,Industri Pengolahan Non Migas,12. Industri Mesin dan Perlengkapan,57162.8,0.27
+C. Industri Pengolahan,Industri Pengolahan Non Migas,13. Industri Alat Angkutan,309933.7,1.463
+C. Industri Pengolahan,Industri Pengolahan Non Migas,14. Industri Furnitur,43538.7,0.205
+C. Industri Pengolahan,Industri Pengolahan Non Migas,15. Industri Pengolahan Lainnya; Jasa Reparasi dan Pemasangan Mesin dan Peralatan,26039.9,0.123
+D. Pengadaan Listrik dan Gas,,,227527.4,1.074
+D. Pengadaan Listrik dan Gas,1. Ketenagalistrikan,,196983.2,0.93
+D. Pengadaan Listrik dan Gas,2. Pengadaan Gas dan Produksi Es,,30544.2,0.144
+"E. Pengadaan Air, Pengelolaan Sampah, Limbah dan Daur Ulang",,,14258.2,0.067
+F. Konstruksi,,,2233463.1,10.542
+G. Perdagangan Besar dan Eceran; Reparasi Mobil dan Sepeda Motor,,,2893315.4,13.656
+G. Perdagangan Besar dan Eceran; Reparasi Mobil dan Sepeda Motor,"1. Perdagangan Mobil, Sepeda Motor dan Reparasinya",,475753.0,2.246
+G. Perdagangan Besar dan Eceran; Reparasi Mobil dan Sepeda Motor,"2. Perdagangan Besar dan Eceran, Bukan Mobil dan Sepeda Motor",,2417562.4,11.411
+H. Transportasi dan Pergudangan,,,1358116.6,6.41
+H. Transportasi dan Pergudangan,1. Angkutan Rel,,23213.2,0.11
+H. Transportasi dan Pergudangan,2. Angkutan Darat,,629804.9,2.973
+H. Transportasi dan Pergudangan,3. Angkutan Laut,,73172.0,0.345
+H. Transportasi dan Pergudangan,4. Angkutan Sungai Danau dan Penyeberangan,,36013.9,0.17
+H. Transportasi dan Pergudangan,5. Angkutan Udara,,313003.9,1.477
+H. Transportasi dan Pergudangan,6. Pergudangan dan Jasa Penunjang Angkutan; Pos dan Kurir,,282908.7,1.335
+I. Penyediaan Akomodasi dan Makan Minum,,,583897.8,2.756
+I. Penyediaan Akomodasi dan Makan Minum,1. Penyediaan Akomodasi,,134065.5,0.633
+I. Penyediaan Akomodasi dan Makan Minum,2. Penyediaan Makan Minum,,449832.3,2.123
+J. Informasi dan Komunikasi,,,960021.6,4.531
+K. Jasa Keuangan dan Asuransi,,,922810.9,4.356
+K. Jasa Keuangan dan Asuransi,1. Jasa Perantara Keuangan,,601790.9,2.84
+K. Jasa Keuangan dan Asuransi,2. Asuransi dan Dana Pensiun,,175119.5,0.827
+K. Jasa Keuangan dan Asuransi,3. Jasa Keuangan Lainnya,,129569.3,0.612
+K. Jasa Keuangan dan Asuransi,4. Jasa Penunjang Keuangan,,16331.2,0.077
+L. Real Estate,,,520728.1,2.458
+"M,N. Jasa Perusahaan",,,424169.8,2.002
+"O. Administrasi Pemerintahan, Pertahanan dan Jaminan Sosial Wajib",,,673476.4,3.179
+P. Jasa Pendidikan,,,621395.2,2.933
+Q. Jasa Kesehatan dan Kegiatan Sosial,,,278198.5,1.313
+"R,S,T,U. Jasa lainnya",,,454308.8,2.144
