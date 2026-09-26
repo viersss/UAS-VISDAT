@@ -474,13 +474,12 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
           <div className="mt-6">
             <InsightPanel title="Apa yang terungkap?">
               <p>
-                <strong>{topIPM.provinsi}</strong> menempati puncak IPM dengan nilai {topIPM.ipm.toFixed(1)}, sementara
-                <strong> {bottomIPM.provinsi}</strong> berada di ujung bawah dengan {bottomIPM.ipm.toFixed(1)}. Korelasi
-                antara IPM dan kemiskinan sangat kuat, yaitu r = {corrIPMKemiskinan.toFixed(2)}, yang menandakan bahwa
-                ketika kemiskinan menekan, kualitas hidup manusia tidak naik secara merata. Di sisi lain, akses listrik
-                berkorelasi positif dengan IPM (r = {corrIPMElektrifikasi.toFixed(2)}), artinya jaringan dasar listrik,
-                bukan sekadar indikator teknis, adalah fondasi yang membuka ruang untuk pendidikan, layanan kesehatan, dan
-                produktivitas rumah tangga.
+                <strong>{topIPM.provinsi}</strong> mencatat IPM tertinggi dengan nilai {topIPM.ipm.toFixed(1)}, sementara
+                <strong> {bottomIPM.provinsi}</strong> berada di posisi terendah dengan {bottomIPM.ipm.toFixed(1)}. Korelasi
+                antara IPM dan kemiskinan menunjukkan hubungan negatif yang kuat (r = {corrIPMKemiskinan.toFixed(2)}), yang
+                berarti provinsi dengan tingkat kemiskinan lebih tinggi cenderung memiliki IPM yang lebih rendah. Sementara itu,
+                akses listrik memiliki korelasi positif dengan IPM (r = {corrIPMElektrifikasi.toFixed(2)}), menunjukkan bahwa
+                ketersediaan layanan dasar turut berkaitan dengan capaian pendidikan, kesehatan, dan produktivitas masyarakat.
               </p>
             </InsightPanel>
           </div>
@@ -600,11 +599,7 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
           <div className="mt-6">
             <InsightPanel title="Pola yang terlihat">
               <p>
-                Indonesia Timur, terutama Maluku dan Papua, masih menunjukkan profil pembangunan yang lebih rendah
-                dibandingkan wilayah barat. Konsentrasi kemiskinan dan lemahnya akses terhadap layanan dasar membuat
-                ketimpangan terasa semakin nyata di kehidupan sehari-hari, bukan hanya dalam angka. Di sisi lain,
-                wilayah dengan pendapatan tinggi belum otomatis menjamin kualitas hidup yang seimbang, karena sumber
-                daya alam saja tidak cukup tanpa pemerataan akses, infrastruktur, dan kapasitas lokal.
+Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangunan yang relatif lebih rendah dibandingkan wilayah barat Indonesia. Tingginya kemiskinan dan terbatasnya akses terhadap layanan dasar membuat kesenjangan antarwilayah semakin terlihat dalam kehidupan sehari-hari. Sementara itu, tingginya pendapatan di suatu wilayah belum tentu diikuti kualitas hidup yang setara, karena potensi ekonomi perlu didukung oleh pemerataan akses, infrastruktur, dan kapasitas masyarakat lokal.
               </p>
             </InsightPanel>
           </div>
@@ -718,12 +713,12 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
           <div className="mt-6">
             <InsightPanel title="Insight struktur ekonomi">
               <p>
-                Sektor <strong>{sectorTotals[0].sektor}</strong> menjadi penyumbang utama PDB, dengan kontribusi sekitar
+                Sektor <strong>{sectorTotals[0].sektor}</strong> menjadi penyumbang terbesar PDB, dengan kontribusi sekitar
                 {((sectorTotals[0].nilai / totalPDB) * 100).toFixed(1)}% ({sectorTotals[0].nilai.toLocaleString('id-ID')} triliun rupiah),
-                diikuti oleh <strong>{sectorTotals[1].sektor}</strong> dengan {((sectorTotals[1].nilai / totalPDB) * 100).toFixed(1)}%.
-                Artinya, pertumbuhan ekonomi nasional masih sangat berpusat pada sektor dengan nilai tambah tinggi, sementara
-                sektor yang lebih luas dan padat tenaga kerja tumbuh lebih lambat dalam porsi kontribusinya. Ini menjadi sinyal
-                bahwa ekspansi kesejahteraan belum sepenuhnya merata ke seluruh lapisan kegiatan ekonomi.
+                disusul oleh <strong>{sectorTotals[1].sektor}</strong> sebesar {((sectorTotals[1].nilai / totalPDB) * 100).toFixed(1)}%.
+                Besarnya kontribusi kedua sektor ini menunjukkan bahwa struktur ekonomi nasional masih cukup terkonsentrasi pada
+                sektor tertentu. Sementara itu, kontribusi sektor lainnya masih lebih kecil, sehingga pertumbuhan ekonomi belum
+                tentu mencerminkan pemerataan nilai tambah di seluruh kegiatan ekonomi.
               </p>
             </InsightPanel>
           </div>
