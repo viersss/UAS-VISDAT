@@ -9,15 +9,15 @@ interface Props {
 }
 
 const SECTOR_COLORS: Record<string, string> = {
-  'Pertanian, Kehutanan & Perikanan': '#5b9a6a',
-  'Pertambangan & Penggalian': '#8b6b3e',
+  'Pertanian, Kehutanan & Perikanan': '#3f7d5c',
+  'Pertambangan & Penggalian': '#a87335',
   'Industri Pengolahan': '#1a7f8a',
-  'Pengadaan Listrik & Gas': '#e8a838',
-  'Konstruksi': '#9b6fa8',
-  'Perdagangan Besar & Eceran': '#3b82f6',
-  'Transportasi & Pergudangan': '#d97742',
-  'Jasa Penyediaan Akomodasi': '#ec5f5f',
-  'Jasa Lainnya': '#6b7f94',
+  'Pengadaan Listrik & Gas': '#d79a2b',
+  'Konstruksi': '#7a5aa6',
+  'Perdagangan Besar & Eceran': '#3c7ae6',
+  'Transportasi & Pergudangan': '#d96f3b',
+  'Jasa Penyediaan Akomodasi': '#e25d5d',
+  'Jasa Lainnya': '#5a7389',
 };
 
 interface TreeNode {
@@ -30,8 +30,24 @@ interface TreeNode {
 
 export default function Sunburst({ data, width = 720, height = 560 }: Props) {
   const ref = useRef<SVGSVGElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState<{ name: string; nilai: number; kontribusi: number; x: number; y: number } | null>(null);
-  const [focus, setFocus] = useState<string | null>(null);
+  const [chartSize, setChartSize] = useState({ width, height });
+
+  useEffect(() => {
+    const updateSize = () => {
+      const rect = wrapRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const nextWidth = Math.max(340, Math.min(rect.width || width, width));
+      const nextHeight = Math.min(560, Math.max(420, nextWidth * 0.8));
+      setChartSize({ width: nextWidth, height: nextHeight });
+    };
+
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    if (wrapRef.current) observer.observe(wrapRef.current);
+    return () => observer.disconnect();
+  }, [width]);
 
   useEffect(() => {
     const svg = d3.select(ref.current);
@@ -66,8 +82,8 @@ export default function Sunburst({ data, width = 720, height = 560 }: Props) {
       .sum(d => d.value || 0)
       .sort((a, b) => (b.value || 0) - (a.value || 0));
 
-    const radius = Math.min(width, height) / 2 - 10;
-    const innerRadius = 40;
+    const radius = Math.min(chartSize.width, chartSize.height) / 2 - 18;
+    const innerRadius = 42;
 
     const partition = d3.partition<TreeNode>().size([2 * Math.PI, radius]);
     partition(hierarchy);
@@ -75,12 +91,12 @@ export default function Sunburst({ data, width = 720, height = 560 }: Props) {
     const arcGen = d3.arc<d3.HierarchyRectangularNode<TreeNode>>()
       .startAngle(d => d.x0)
       .endAngle(d => d.x1)
-      .padAngle(0.004)
+      .padAngle(0.006)
       .padRadius(radius)
       .innerRadius(d => Math.max(innerRadius, d.y0))
-      .outerRadius(d => Math.max(innerRadius + 2, d.y1 - 2));
+      .outerRadius(d => Math.max(innerRadius + 1, d.y1 - 2));
 
-    const g = svg.append('g').attr('transform', `translate(${width / 2},${height / 2})`);
+    const g = svg.append('g').attr('transform', `translate(${chartSize.width / 2},${chartSize.height / 2})`);
 
     const allNodes = hierarchy.descendants().filter(d => d.depth > 0);
 
@@ -105,7 +121,7 @@ export default function Sunburst({ data, width = 720, height = 560 }: Props) {
           name: d.data.name,
           nilai: d.value || 0,
           kontribusi: d.data.kontribusi || 0,
-          x: x + 12, y: y + 12,
+          x: x + 14, y: y + 14,
         });
       })
       .on('mousemove', (event, d) => {
@@ -114,64 +130,66 @@ export default function Sunburst({ data, width = 720, height = 560 }: Props) {
           name: d.data.name,
           nilai: d.value || 0,
           kontribusi: d.data.kontribusi || 0,
-          x: x + 12, y: y + 12,
+          x: x + 14, y: y + 14,
         });
       })
-      .on('mouseleave', () => setHovered(null))
-      .on('click', (event, d) => {
-        event.stopPropagation();
-        setFocus(d.depth === 1 ? d.data.name : null);
-      });
+      .on('mouseleave', () => setHovered(null));
 
-    // Sector labels on outer ring
     const sectorNodes = hierarchy.descendants().filter(d => d.depth === 1) as d3.HierarchyRectangularNode<TreeNode>[];
     g.selectAll('.sector-label')
       .data(sectorNodes)
       .join('text')
       .attr('class', 'sector-label')
+      .filter(d => (d.x1 - d.x0) * radius > 0.18)
       .attr('transform', d => {
         const angle = (d.x0 + d.x1) / 2;
-        const r = d.y1 - 8;
-        const x = Math.cos(angle - Math.PI / 2) * r;
-        const y = Math.sin(angle - Math.PI / 2) * r;
+        const textRadius = d.y1 - 12;
+        const x = Math.cos(angle - Math.PI / 2) * textRadius;
+        const y = Math.sin(angle - Math.PI / 2) * textRadius;
         const rotate = (angle * 180 / Math.PI) - 90;
         return `translate(${x},${y}) rotate(${rotate})`;
       })
       .attr('text-anchor', 'middle')
       .attr('dy', '0.35em')
-      .style('font-size', '9px')
+      .style('font-size', '8.5px')
       .style('font-weight', '700')
-      .style('fill', '#fff')
-      .style('text-transform', 'uppercase')
+      .style('fill', '#ffffff')
       .style('letter-spacing', '0.04em')
+      .style('paint-order', 'stroke')
+      .style('stroke', 'rgba(0,0,0,0.18)')
+      .style('stroke-width', '0.4px')
       .style('pointer-events', 'none')
       .text(d => {
-        const label = d.data.name.length > 22 ? d.data.name.slice(0, 20) + '…' : d.data.name;
+        const label = d.data.name.length > 18 ? d.data.name.slice(0, 16) + '…' : d.data.name;
         return label;
       });
 
-    // Center label
+    g.append('circle')
+      .attr('r', innerRadius - 8)
+      .attr('fill', '#fff')
+      .attr('opacity', 0.82);
+
     g.append('text')
       .attr('text-anchor', 'middle')
-      .attr('dy', '-0.2em')
-      .style('font-size', '14px')
+      .attr('dy', '-0.1em')
+      .style('font-size', '13px')
       .style('font-weight', '700')
       .style('fill', '#14283b')
       .text('PDB');
 
     g.append('text')
       .attr('text-anchor', 'middle')
-      .attr('dy', '1.2em')
-      .style('font-size', '10px')
+      .attr('dy', '1.25em')
+      .style('font-size', '9px')
       .style('fill', '#6b8294')
       .style('text-transform', 'uppercase')
       .style('letter-spacing', '0.08em')
       .text('Nasional');
-  }, [data, width, height]);
+  }, [chartSize.height, chartSize.width, data]);
 
   return (
-    <div className="relative">
-      <svg ref={ref} width={width} height={height} className="d3-chart w-full h-auto" style={{ maxWidth: width }} />
+    <div ref={wrapRef} className="relative w-full">
+      <svg ref={ref} width={chartSize.width} height={chartSize.height} viewBox={`0 0 ${chartSize.width} ${chartSize.height}`} className="d3-chart block w-full h-auto" preserveAspectRatio="xMidYMid meet" />
       {hovered && (
         <div className="map-tooltip visible" style={{ left: hovered.x, top: hovered.y }}>
           <div style={{ fontWeight: 600 }}>{hovered.name}</div>

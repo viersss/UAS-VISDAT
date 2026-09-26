@@ -501,7 +501,7 @@ export default function App() {
             />
           </div>
 
-          <div className="bg-white border border-line rounded-xl p-4 sm:p-6 overflow-x-auto">
+          <div className="bg-white border border-line rounded-xl p-4 sm:p-6 overflow-hidden">
             {hierarchyTab === 'treemap' && (
               <>
                 <Treemap data={HIERARCHY_DATA} />

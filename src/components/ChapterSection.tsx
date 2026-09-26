@@ -19,7 +19,7 @@ export default function ChapterSection({
 }: ChapterSectionProps) {
   return (
     <section className="max-w-6xl mx-auto px-6 sm:px-8 py-16 sm:py-24">
-      <div className="mb-10 rounded-[26px] border border-slate-200/80 bg-white/70 p-6 sm:p-8 shadow-card backdrop-blur-sm">
+      <div className="story-card mb-10 rounded-[26px] border border-slate-200/80 bg-white/70 p-6 sm:p-8 shadow-card backdrop-blur-sm reveal-up">
         <div className="text-xs font-semibold tracking-[0.18em] uppercase text-accent mb-3">
           {chapter}
         </div>

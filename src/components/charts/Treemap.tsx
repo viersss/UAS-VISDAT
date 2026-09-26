@@ -9,15 +9,15 @@ interface Props {
 }
 
 const SECTOR_COLORS: Record<string, string> = {
-  'Pertanian, Kehutanan & Perikanan': '#5b9a6a',
-  'Pertambangan & Penggalian': '#8b6b3e',
+  'Pertanian, Kehutanan & Perikanan': '#3f7d5c',
+  'Pertambangan & Penggalian': '#a87335',
   'Industri Pengolahan': '#1a7f8a',
-  'Pengadaan Listrik & Gas': '#e8a838',
-  'Konstruksi': '#9b6fa8',
-  'Perdagangan Besar & Eceran': '#3b82f6',
-  'Transportasi & Pergudangan': '#d97742',
-  'Jasa Penyediaan Akomodasi': '#ec5f5f',
-  'Jasa Lainnya': '#6b7f94',
+  'Pengadaan Listrik & Gas': '#d79a2b',
+  'Konstruksi': '#7a5aa6',
+  'Perdagangan Besar & Eceran': '#3c7ae6',
+  'Transportasi & Pergudangan': '#d96f3b',
+  'Jasa Penyediaan Akomodasi': '#e25d5d',
+  'Jasa Lainnya': '#5a7389',
 };
 
 interface TreeNode {
@@ -31,13 +31,29 @@ interface TreeNode {
 
 export default function Treemap({ data, width = 820, height = 560 }: Props) {
   const ref = useRef<SVGSVGElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState<{ name: string; nilai: number; kontribusi: number; x: number; y: number } | null>(null);
+  const [chartSize, setChartSize] = useState({ width, height });
+
+  useEffect(() => {
+    const updateSize = () => {
+      const rect = wrapRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const nextWidth = Math.max(360, Math.min(rect.width || width, width));
+      const nextHeight = Math.min(560, Math.max(420, nextWidth * 0.72));
+      setChartSize({ width: nextWidth, height: nextHeight });
+    };
+
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    if (wrapRef.current) observer.observe(wrapRef.current);
+    return () => observer.disconnect();
+  }, [width]);
 
   useEffect(() => {
     const svg = d3.select(ref.current);
     svg.selectAll('*').remove();
 
-    // Build hierarchy
     const root: TreeNode = { name: 'PDB Nasional', depth: -1, sectorName: '' };
     const sectorMap = new Map<string, Map<string, HierarchyDatum[]>>();
 
@@ -74,24 +90,20 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
       .sort((a, b) => (b.value || 0) - (a.value || 0));
 
     const treemap = d3.treemap<TreeNode>()
-      .size([width, height])
-      .paddingOuter(2)
-      .paddingTop(d => d.depth === 0 ? 22 : d.depth === 1 ? 16 : 0)
+      .size([chartSize.width, chartSize.height])
+      .paddingOuter(3)
+      .paddingTop(d => d.depth === 0 ? 26 : d.depth === 1 ? 18 : 0)
       .paddingInner(2)
       .round(true);
 
     const treeRoot = treemap(hierarchy);
-
     const g = svg.append('g');
-
-    // Sector-level cells (depth 1)
     const sectors = treeRoot.descendants().filter(d => d.depth === 1) as d3.HierarchyRectangularNode<TreeNode>[];
 
     sectors.forEach(node => {
       const sectorName = node.data.sectorName;
       const color = SECTOR_COLORS[sectorName] || '#6b8294';
 
-      // Sector background
       g.append('rect')
         .attr('x', node.x0).attr('y', node.y0)
         .attr('width', node.x1 - node.x0).attr('height', node.y1 - node.y0)
@@ -99,30 +111,28 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
         .attr('stroke', color).attr('stroke-width', 1.5)
         .attr('rx', 4);
 
-      // Sector label
-      if (node.x1 - node.x0 > 60 && node.y1 - node.y0 > 30) {
-        const label = sectorName.length > 28 ? sectorName.slice(0, 26) + '…' : sectorName;
+      const label = sectorName.length > 22 ? sectorName.slice(0, 20) + '…' : sectorName;
+      if (node.x1 - node.x0 > 60 && node.y1 - node.y0 > 28) {
         g.append('text')
-          .attr('x', node.x0 + 6).attr('y', node.y0 + 14)
-          .style('font-size', '10px').style('font-weight', '700')
+          .attr('x', node.x0 + 7).attr('y', node.y0 + 16)
+          .style('font-size', '9px').style('font-weight', '700')
           .style('fill', color).style('text-transform', 'uppercase')
           .style('letter-spacing', '0.04em')
           .text(label);
       }
 
-      // Leaf cells (rincian)
       const leaves = node.descendants().filter(d => d.depth === 3) as d3.HierarchyRectangularNode<TreeNode>[];
       leaves.forEach(leaf => {
         const w = leaf.x1 - leaf.x0;
         const h = leaf.y1 - leaf.y0;
-        if (w < 3 || h < 3) return;
+        if (w < 4 || h < 4) return;
 
         const kontribusi = leaf.data.kontribusi || 0;
-        const intensity = d3.scaleLinear().domain([0, 3]).range([0.3, 0.85]).clamp(true);
+        const intensity = d3.scaleLinear().domain([0, 3]).range([0.28, 0.85]).clamp(true);
 
         g.append('rect')
           .attr('x', leaf.x0 + 1).attr('y', leaf.y0 + 1)
-          .attr('width', w - 2).attr('height', h - 2)
+          .attr('width', Math.max(0, w - 2)).attr('height', Math.max(0, h - 2))
           .attr('fill', color)
           .attr('opacity', intensity(kontribusi))
           .attr('rx', 2)
@@ -133,7 +143,7 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
               name: leaf.data.name,
               nilai: leaf.data.value || 0,
               kontribusi: kontribusi,
-              x: x + 12, y: y + 12,
+              x: x + 14, y: y + 14,
             });
           })
           .on('mousemove', (event) => {
@@ -142,30 +152,36 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
               name: leaf.data.name,
               nilai: leaf.data.value || 0,
               kontribusi: kontribusi,
-              x: x + 12, y: y + 12,
+              x: x + 14, y: y + 14,
             });
           })
           .on('mouseleave', () => setHovered(null));
 
-        if (w > 40 && h > 24) {
+        if (w > 52 && h > 25) {
+          const labelText = leaf.data.name.length > 16 ? leaf.data.name.slice(0, 14) + '…' : leaf.data.name;
           g.append('text')
-            .attr('x', leaf.x0 + 5).attr('y', leaf.y0 + h / 2 + 2)
-            .style('font-size', '9px').style('font-weight', '600')
-            .style('fill', '#fff')
-            .text(leaf.data.name.length > 18 ? leaf.data.name.slice(0, 16) + '…' : leaf.data.name);
+            .attr('x', leaf.x0 + 6).attr('y', leaf.y0 + h / 2 + 2)
+            .style('font-size', Math.max(8, Math.min(10, w / 7)) + 'px')
+            .style('font-weight', '700')
+            .style('fill', '#ffffff')
+            .style('paint-order', 'stroke')
+            .style('stroke', 'rgba(0,0,0,0.18)')
+            .style('stroke-width', '0.3px')
+            .text(labelText);
 
           g.append('text')
-            .attr('x', leaf.x0 + 5).attr('y', leaf.y0 + h / 2 + 14)
-            .style('font-size', '9px').style('fill', '#fff').style('opacity', 0.85)
+            .attr('x', leaf.x0 + 6).attr('y', leaf.y0 + h / 2 + 14)
+            .style('font-size', Math.max(7, Math.min(8, w / 9)) + 'px')
+            .style('fill', '#ffffff').style('opacity', 0.95)
             .text(`${kontribusi.toFixed(1)}%`);
         }
       });
     });
-  }, [data, width, height]);
+  }, [chartSize.height, chartSize.width, data]);
 
   return (
-    <div className="relative">
-      <svg ref={ref} width={width} height={height} className="d3-chart w-full h-auto rounded-lg" style={{ maxWidth: width }} />
+    <div ref={wrapRef} className="relative w-full">
+      <svg ref={ref} width={chartSize.width} height={chartSize.height} viewBox={`0 0 ${chartSize.width} ${chartSize.height}`} className="d3-chart block w-full h-auto rounded-lg" preserveAspectRatio="xMidYMid meet" />
       {hovered && (
         <div className="map-tooltip visible" style={{ left: hovered.x, top: hovered.y }}>
           <div style={{ fontWeight: 600 }}>{hovered.name}</div>

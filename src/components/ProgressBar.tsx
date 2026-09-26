@@ -35,33 +35,33 @@ export default function ProgressBar({ items }: ProgressBarProps) {
   }, [items]);
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-line-soft">
-      <div className="h-0.5 bg-line-soft absolute bottom-0 left-0 right-0">
+    <div className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200/80 bg-white/75 backdrop-blur-xl shadow-[0_10px_25px_rgba(19,43,61,0.04)]">
+      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-slate-200/80">
         <div
-          className="h-full bg-accent transition-[width] duration-150 ease-out"
+          className="h-full bg-gradient-to-r from-accent via-warm to-orange-400 transition-[width] duration-150 ease-out"
           style={{ width: `${progress}%` }}
         />
       </div>
-      <div className="max-w-6xl mx-auto px-6 sm:px-8 h-14 flex items-center justify-between">
-        <div className="text-sm font-semibold tracking-tight text-ink">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6 sm:px-8">
+        <div className="text-sm font-semibold tracking-[-0.02em] text-ink">
           Ketimpangan Pembangunan Indonesia
         </div>
-        <nav className="hidden sm:flex items-center gap-1">
+        <nav className="hidden items-center gap-1 sm:flex">
           {items.map((item, i) => (
             <button
               key={item.id}
               onClick={() => document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' })}
-              className={`text-xs px-3 py-1.5 rounded-full transition-colors duration-200 ${
+              className={`nav-pill rounded-full px-3 py-1.5 text-[11px] font-medium tracking-[0.02em] transition-all duration-200 ${
                 active === i
-                  ? 'bg-accent-soft text-accent-deep font-semibold'
-                  : 'text-ink-muted hover:text-ink-soft hover:bg-gray-50'
+                  ? 'bg-gradient-to-r from-accent-soft to-amber-50 text-accent-deep shadow-sm ring-1 ring-accent/10'
+                  : 'text-ink-muted hover:bg-slate-100 hover:text-ink-soft'
               }`}
             >
               {item.label}
             </button>
           ))}
         </nav>
-        <div className="sm:hidden text-xs text-ink-muted font-medium">
+        <div className="text-xs font-medium text-ink-muted sm:hidden">
           {active + 1} / {items.length}
         </div>
       </div>
