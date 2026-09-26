@@ -18,8 +18,8 @@ export default function ChapterSection({
   children,
 }: ChapterSectionProps) {
   return (
-    <section className="max-w-6xl mx-auto px-6 sm:px-8 py-16 sm:py-24">
-      <div className="story-card mb-10 rounded-[26px] border border-slate-200/80 bg-white/70 p-6 sm:p-8 shadow-card backdrop-blur-sm reveal-up">
+    <section className="max-w-[1360px] mx-auto px-6 sm:px-8 py-14 sm:py-20">
+      <div className="story-card mb-10 rounded-[26px] border border-line p-6 sm:p-8 shadow-card">
         <div className="text-xs font-semibold tracking-[0.18em] uppercase text-accent mb-3">
           {chapter}
         </div>
@@ -27,18 +27,18 @@ export default function ChapterSection({
           {title}
         </h2>
         {subtitle && (
-          <p className="font-serif italic text-lg text-ink-soft mt-3 leading-relaxed max-w-3xl">
+          <p className="font-serif italic text-lg text-ink-soft mt-3 leading-relaxed max-w-[60ch]">
             {subtitle}
           </p>
         )}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-6 max-w-5xl">
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-x-10 gap-y-6">
           <div className="lg:col-span-3">
-            <p className="font-serif text-base text-ink-soft leading-[1.8] narrative-lead">
+            <p className="font-serif text-base text-ink-soft leading-[1.8] narrative-lead max-w-[62ch]">
               {narration}
             </p>
           </div>
           <div className="lg:col-span-2 border-l-[3px] border-warm pl-5">
-            <p className="text-sm text-ink-muted leading-[1.75]">
+            <p className="text-sm text-ink-muted leading-[1.75] max-w-[48ch]">
               {context}
             </p>
           </div>

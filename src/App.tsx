@@ -146,13 +146,13 @@ export default function App() {
           </>
         }
       >
-        <div className="mt-10 max-w-4xl mx-auto">
+        <div className="mt-10">
           <MetricStrip metrics={nationalMetrics} />
         </div>
       </Hero>
 
       {/* INSIGHT PANEL after hero */}
-      <div className="max-w-4xl mx-auto px-6 sm:px-8 -mt-4 mb-8">
+      <div className="max-w-[70ch] mx-auto px-6 sm:px-8 -mt-4 mb-8">
         <InsightPanel title="Kenapa ini penting?">
           Kesenjangan pembangunan bukan sekadar angka yang berbeda; ia adalah cerita tentang akses
           pendidikan, kesehatan, infrastruktur, dan peluang ekonomi yang tidak sama. Di balik
@@ -245,7 +245,7 @@ export default function App() {
               <div className="bg-white border border-line rounded-xl p-4 sm:p-6 overflow-x-auto">
                 {pcaTab === 'pca' && (
                   <>
-                    <PCAScatter points={pcaResult.points} summary={pcaResult.summary} />
+                    <PCAScatter points={pcaResult.points} summary={pcaResult.summary} width={920} height={560} />
                     <ChartCaption>
                       Setiap titik adalah satu provinsi. Sumbu merupakan kombinasi linear
                       terstandardisasi dari 10 indikator pembangunan. Warna menunjukkan pulau.
@@ -258,6 +258,8 @@ export default function App() {
                       data={PROVINCE_DATA}
                       variables={[...INDICATOR_KEYS]}
                       highlighted={highlighted}
+                      width={920}
+                      height={460}
                     />
                     <ChartCaption>
                       Garis berwarna merepresentasikan provinsi yang disorot; garis abu-abu
@@ -271,6 +273,7 @@ export default function App() {
                       data={PROVINCE_DATA}
                       variables={[...INDICATOR_KEYS]}
                       highlighted={highlighted}
+                      width={920}
                     />
                     <ChartCaption>
                       Diagonal menunjukkan nilai korelasi (r) antar indikator. Selain diagonal
@@ -392,6 +395,8 @@ export default function App() {
                       metric={mapMetric}
                       metricLabel={mapMetricInfo.label}
                       highlighted={highlighted}
+                      width={1000}
+                      height={560}
                     />
                     <ChartCaption>
                       Warna provinsi merepresentasikan nilai {mapMetricInfo.label.toLowerCase()}.
@@ -504,7 +509,7 @@ export default function App() {
           <div className="bg-white border border-line rounded-xl p-4 sm:p-6 overflow-hidden">
             {hierarchyTab === 'treemap' && (
               <>
-                <Treemap data={HIERARCHY_DATA} />
+                <Treemap data={HIERARCHY_DATA} width={1160} height={600} />
                 <ChartCaption>
                   Ukuran blok merepresentasikan nilai (triliun rupiah). Warna menunjukkan sektor,
                   intensitas warna mengindikasikan kontribusi terhadap PDB. Hover untuk detail.
@@ -513,7 +518,7 @@ export default function App() {
             )}
             {hierarchyTab === 'sunburst' && (
               <>
-                <Sunburst data={HIERARCHY_DATA} />
+                <Sunburst data={HIERARCHY_DATA} width={780} height={600} />
                 <ChartCaption>
                   Ring terdalam adalah sektor, ring tengah adalah subsektor, ring terluar adalah
                   rincian. Hover untuk detail nilai dan kontribusi.
@@ -531,47 +536,6 @@ export default function App() {
               Struktur ekonomi Indonesia masih bertumpu pada sektor sekunder dan tersier,
               sementara sektor primer seperti pertanian — yang menyerap jutaan tenaga kerja —
               menyumbang porsi yang lebih kecil terhadap nilai tambah nasional.
-            </p>
-          </InsightPanel>
-        </ChapterSection>
-      </div>
-
-      <TransitionQuote
-        quote="Migrasi bukan sekadar perpindahan penduduk; ia adalah bentuk respons terhadap selisih kesempatan, pekerjaan, dan masa depan antar wilayah."
-      />
-
-      {/* BAB 4: MOBILITAS */}
-      <div id="bab-4" className="scroll-mt-16">
-        <ChapterSection
-          chapter="Babak IV — Skala Mobilitas"
-          title="Jaringan & Aliran Migrasi Antarprovinsi"
-          subtitle="Ketimpangan pembangunan tidak hanya terlihat di tempat tinggal, tetapi juga dalam arah perpindahan penduduk yang mencari peluang baru."
-          narration={
-            <>
-              Banyak penduduk tidak tinggal selamanya di tempat lahir. Mereka bergerak dari satu
-              provinsi ke provinsi lain karena pekerjaan, pendidikan, atau mencari kehidupan yang
-              lebih layak. Jaringan migrasi memetakan aliran mobilitas itu — dan dari sini tampak
-              bagaimana pusat-pusat ekonomi dan peluang menarik tenaga kerja dari berbagai penjuru.
-            </>
-          }
-          context={
-            <>
-              <strong className="text-ink">Mengapa ini penting?</strong>
-              <br />
-              Migrasi adalah indikator mobilitas sosial ekonomi. Ketika provinsi tujuan menerima
-              arus besar penduduk, itu menandakan adanya daya tarik sumber daya, pekerjaan, dan
-              fasilitas yang lebih kuat dibanding wilayah asal.
-            </>
-          }
-        >
-          <MigrationNetwork />
-          <InsightPanel title="Interpretasi aliran migrasi">
-            <p>
-              Aliran terbesar berfokus pada titik-titik dengan daya tarik ekonomi tinggi seperti
-              DKI Jakarta, Jawa Barat, dan Sumatera Utara. Di sisi lain, sejumlah provinsi asal
-              masih kehilangan tenaga kerja produktif ke wilayah yang memberi peluang lebih besar.
-              Ini memperlihatkan bahwa mobilitas adalah mekanisme penyeimbang ketimpangan, sekaligus
-              indikator bahwa distribusi kesempatan masih belum merata.
             </p>
           </InsightPanel>
         </ChapterSection>
