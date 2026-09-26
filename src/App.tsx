@@ -536,6 +536,47 @@ export default function App() {
         </ChapterSection>
       </div>
 
+      <TransitionQuote
+        quote="Migrasi bukan sekadar perpindahan penduduk; ia adalah bentuk respons terhadap selisih kesempatan, pekerjaan, dan masa depan antar wilayah."
+      />
+
+      {/* BAB 4: MOBILITAS */}
+      <div id="bab-4" className="scroll-mt-16">
+        <ChapterSection
+          chapter="Babak IV — Skala Mobilitas"
+          title="Jaringan & Aliran Migrasi Antarprovinsi"
+          subtitle="Ketimpangan pembangunan tidak hanya terlihat di tempat tinggal, tetapi juga dalam arah perpindahan penduduk yang mencari peluang baru."
+          narration={
+            <>
+              Banyak penduduk tidak tinggal selamanya di tempat lahir. Mereka bergerak dari satu
+              provinsi ke provinsi lain karena pekerjaan, pendidikan, atau mencari kehidupan yang
+              lebih layak. Jaringan migrasi memetakan aliran mobilitas itu — dan dari sini tampak
+              bagaimana pusat-pusat ekonomi dan peluang menarik tenaga kerja dari berbagai penjuru.
+            </>
+          }
+          context={
+            <>
+              <strong className="text-ink">Mengapa ini penting?</strong>
+              <br />
+              Migrasi adalah indikator mobilitas sosial ekonomi. Ketika provinsi tujuan menerima
+              arus besar penduduk, itu menandakan adanya daya tarik sumber daya, pekerjaan, dan
+              fasilitas yang lebih kuat dibanding wilayah asal.
+            </>
+          }
+        >
+          <MigrationNetwork />
+          <InsightPanel title="Interpretasi aliran migrasi">
+            <p>
+              Aliran terbesar berfokus pada titik-titik dengan daya tarik ekonomi tinggi seperti
+              DKI Jakarta, Jawa Barat, dan Sumatera Utara. Di sisi lain, sejumlah provinsi asal
+              masih kehilangan tenaga kerja produktif ke wilayah yang memberi peluang lebih besar.
+              Ini memperlihatkan bahwa mobilitas adalah mekanisme penyeimbang ketimpangan, sekaligus
+              indikator bahwa distribusi kesempatan masih belum merata.
+            </p>
+          </InsightPanel>
+        </ChapterSection>
+      </div>
+
       {/* EPILOG */}
       <div id="epilog" className="scroll-mt-16">
         <TransitionQuote
