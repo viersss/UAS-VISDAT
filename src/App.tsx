@@ -61,6 +61,26 @@ export default function App() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    const revealNodes = document.querySelectorAll('[data-reveal]');
+    if (!revealNodes.length) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('reveal-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
+    );
+
+    revealNodes.forEach(node => observer.observe(node));
+    return () => observer.disconnect();
+  }, []);
+
   const toggleProvince = (p: string) => {
     setHighlighted(prev => {
       const next = new Set(prev);
@@ -150,18 +170,6 @@ export default function App() {
           <MetricStrip metrics={nationalMetrics} />
         </div>
       </Hero>
-
-      {/* INSIGHT PANEL after hero */}
-      <div className="max-w-[70ch] mx-auto px-6 sm:px-8 -mt-4 mb-8">
-        <InsightPanel title="Kenapa ini penting?">
-          Kesenjangan pembangunan bukan sekadar angka yang berbeda; ia adalah cerita tentang akses
-          pendidikan, kesehatan, infrastruktur, dan peluang ekonomi yang tidak sama. Di balik
-          rata-rata nasional, ada provinsi yang bergerak cepat dan ada wilayah yang masih berjuang
-          menutup celah yang lama. Rentang IPM sebesar{' '}
-          <strong>{(nationalMetrics[4].value as string)}</strong> poin antara provinsi tertinggi
-          dan terendah menunjukkan bahwa jurang pembangunan tetap lebar.
-        </InsightPanel>
-      </div>
 
       {/* BAB 1: MULTIVARIAT */}
       <div id="bab-1" className="scroll-mt-16">

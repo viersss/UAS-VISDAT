@@ -42,11 +42,8 @@ export default function ProgressBar({ items }: ProgressBarProps) {
           style={{ width: `${progress}%` }}
         />
       </div>
-      <div className="mx-auto flex h-14 max-w-[1360px] items-center justify-between px-6 sm:px-8">
-        <div className="text-sm font-semibold tracking-[-0.02em] text-ink">
-          Ketimpangan Pembangunan Indonesia
-        </div>
-        <nav className="hidden items-center gap-1 sm:flex">
+      <div className="mx-auto flex h-14 max-w-[1360px] items-center justify-center px-6 sm:px-8">
+        <nav className="hidden items-center justify-center gap-1 sm:flex">
           {items.map((item, i) => (
             <button
               key={item.id}
