@@ -11,6 +11,24 @@ interface Props {
   height?: number;
 }
 
+function formatAxisLabel(value: string) {
+  const label = INDICATOR_LABELS[value] || value;
+  const compact = label.replace(/per\s+/i, '/').replace(/\s+/g, ' ').trim();
+
+  if (compact.length <= 11) return [{ text: compact }];
+
+  const words = compact.split(' ');
+  if (words.length > 1) {
+    const mid = Math.ceil(words.length / 2);
+    const line1 = words.slice(0, mid).join(' ');
+    const line2 = words.slice(mid).join(' ');
+    return [{ text: line1 }, { text: line2 }];
+  }
+
+  const splitAt = Math.ceil(compact.length / 2);
+  return [{ text: compact.slice(0, splitAt) }, { text: compact.slice(splitAt) }];
+}
+
 export default function ParallelCoordinates({ data, variables, highlighted, width = 860, height = 440 }: Props) {
   const ref = useRef<SVGSVGElement>(null);
 
@@ -49,16 +67,22 @@ export default function ParallelCoordinates({ data, variables, highlighted, widt
       axisG.selectAll('.tick line').attr('stroke', '#e2e8ed');
 
       // Variable label
-      g.append('text')
+      const labelLines = formatAxisLabel(v);
+      const labelText = g.append('text')
         .attr('x', xScale(v) ?? 0)
-        .attr('y', -12)
+        .attr('y', -8)
         .attr('text-anchor', 'middle')
-        .style('font-size', '10px')
+        .style('font-size', '8.7px')
         .style('font-weight', '600')
         .style('fill', '#14283b')
-        .style('text-transform', 'uppercase')
-        .style('letter-spacing', '0.04em')
-        .text(INDICATOR_LABELS[v] || v);
+        .style('letter-spacing', '0.02em');
+
+      labelLines.forEach((line, index) => {
+        labelText.append('tspan')
+          .attr('x', xScale(v) ?? 0)
+          .attr('dy', index === 0 ? 0 : 12)
+          .text(line.text);
+      });
     });
 
     const lineGen = d3.line<d3.NumberValue>()

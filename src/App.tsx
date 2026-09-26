@@ -26,13 +26,14 @@ import type { GeoCollection } from '@/lib/geo';
 
 const NAV_ITEMS = [
   { id: 'hero', label: 'Pembuka' },
-  { id: 'bab-1', label: 'I. Multivariat' },
-  { id: 'bab-2', label: 'II. Geospasial' },
-  { id: 'bab-3', label: 'III. Hierarki' },
-  { id: 'epilog', label: 'Epilog' },
+  { id: 'bab-1', label: 'Multivariat' },
+  { id: 'bab-2', label: 'Spasial' },
+  { id: 'bab-3', label: 'Ekonomi' },
+  { id: 'epilog', label: 'Penutup' },
 ];
 
 const ALL_PROVINCES = PROVINCE_DATA.map(d => d.provinsi).sort((a, b) => a.localeCompare(b));
+const MATRIX_VARIABLES = [...INDICATOR_KEYS].slice(0, 5);
 
 const MAP_METRICS = [
   { key: 'ipm', label: 'IPM' },
@@ -52,6 +53,7 @@ export default function App() {
   const [pcaTab, setPcaTab] = useState('pca');
   const [mapMetric, setMapMetric] = useState<string>('ipm');
   const [hierarchyTab, setHierarchyTab] = useState('treemap');
+  const [focusPair, setFocusPair] = useState<[string, string]>(['ipm', 'kemiskinan']);
   const [geo, setGeo] = useState<GeoCollection | null>(null);
 
   useEffect(() => {
@@ -81,6 +83,37 @@ export default function App() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const parallaxNodes = document.querySelectorAll<HTMLElement>('[data-parallax]');
+    if (!parallaxNodes.length) return;
+
+    let ticking = false;
+
+    const updateParallax = () => {
+      const viewportHeight = window.innerHeight;
+
+      parallaxNodes.forEach(node => {
+        const rect = node.getBoundingClientRect();
+        const distanceFromCenter = (viewportHeight / 2 - rect.top) / viewportHeight;
+        const drift = distanceFromCenter * 18;
+        node.style.transform = `translate3d(0, ${drift}px, 0)`;
+      });
+
+      ticking = false;
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateParallax);
+        ticking = true;
+      }
+    };
+
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const toggleProvince = (p: string) => {
     setHighlighted(prev => {
       const next = new Set(prev);
@@ -88,6 +121,22 @@ export default function App() {
       return next;
     });
   };
+
+  const updateFocusPair = (index: 0 | 1, value: string) => {
+    setFocusPair(prev => {
+      const next = [...prev] as [string, string];
+      next[index] = value;
+      return next;
+    });
+  };
+
+  const focusCorrelation = useMemo(() => {
+    const [xKey, yKey] = focusPair;
+    return pearson(
+      PROVINCE_DATA.map(d => d[xKey as keyof ProvinceDatum] as number),
+      PROVINCE_DATA.map(d => d[yKey as keyof ProvinceDatum] as number)
+    );
+  }, [focusPair]);
 
   // National metrics
   const nationalMetrics = useMemo(() => {
@@ -150,81 +199,205 @@ export default function App() {
   }, []);
   const totalPDB = sectorTotals.reduce((s, d) => s + d.nilai, 0);
 
+  const chapterOneHighlights = [
+    {
+      label: 'IPM tertinggi',
+      value: `${topIPM.provinsi} · ${topIPM.ipm.toFixed(1)}`,
+      note: 'Provinsi dengan kualitas hidup paling tinggi',
+    },
+    {
+      label: 'IPM terendah',
+      value: `${bottomIPM.provinsi} · ${bottomIPM.ipm.toFixed(1)}`,
+      note: 'Batas bawah pembangunan manusia nasional',
+    },
+    {
+      label: 'Korelasi paling kuat',
+      value: `r = ${corrIPMKemiskinan.toFixed(2)}`,
+      note: 'IPM dan kemiskinan bergerak berlawanan arah',
+    },
+  ];
+
+  const chapterTwoHighlights = [
+    {
+      label: 'Wilayah teratas',
+      value: `${spatialByPulau[0]?.pulau ?? '—'} · ${spatialByPulau[0]?.avgIPM.toFixed(1) ?? '0.0'}`,
+      note: 'Rata-rata IPM tertinggi di pulau tersebut',
+    },
+    {
+      label: 'Kesenjangan spatial',
+      value: `${Math.max(...spatialByPulau.map(d => d.avgIPM)).toFixed(1)} – ${Math.min(...spatialByPulau.map(d => d.avgIPM)).toFixed(1)}`,
+      note: 'Jarak rata-rata IPM antar pulau',
+    },
+    {
+      label: 'Pola utama',
+      value: 'Timur masih tertinggal',
+      note: 'Kekayaan sumber daya belum otomatis mengurangi kesenjangan',
+    },
+  ];
+
+  const chapterThreeHighlights = [
+    {
+      label: 'Sektor terbesar',
+      value: `${sectorTotals[0].sektor}`,
+      note: `${((sectorTotals[0].nilai / totalPDB) * 100).toFixed(1)}% dari total PDB`,
+    },
+    {
+      label: 'Sektor kedua',
+      value: `${sectorTotals[1].sektor}`,
+      note: `${((sectorTotals[1].nilai / totalPDB) * 100).toFixed(1)}% dari total PDB`,
+    },
+    {
+      label: 'Pola ekonomi',
+      value: 'Konsentrasi tinggi',
+      note: 'Nilai tambah tumbuh di sektor yang lebih padat modal',
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-canvas">
       <ProgressBar items={NAV_ITEMS} />
 
-      {/* HERO */}
       <Hero
         eyebrow=""
         title={<>Ketimpangan Pembangunan Indonesia</>}
         subtitle={
           <>
-            Dari Sabang sampai Merauke, angka-angka pembangunan tidak pernah terdistribusi merata.
-            Setiap provinsi, setiap kabupaten, setiap sektor ekonomi menyimpan kisahnya sendiri,
-            kisah tentang siapa yang maju, siapa yang tertinggal, dan mengapa kesenjangan itu terus bertumbuh.
+            Dari Aceh sampai Papua, pembangunan tidak tumbuh secara seragam. Di balik rata-rata nasional,
+            terdapat provinsi yang melesat, kabupaten yang tertinggal, dan sektor ekonomi yang menikmati
+            nilai tambah jauh lebih besar daripada yang lain.
           </>
         }
       >
+        <div className="mt-8 flex flex-wrap justify-center gap-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+          <span className="story-tag">34 provinsi</span>
+          <span className="story-tag">10 indikator</span>
+          <span className="story-tag">3 dimensi ketimpangan</span>
+        </div>
         <div className="mt-10">
           <MetricStrip metrics={nationalMetrics} />
         </div>
       </Hero>
 
-      {/* BAB 1: MULTIVARIAT */}
       <div id="bab-1" className="scroll-mt-16">
         <ChapterSection
-          chapter=""
+          chapter="Bab 1"
           title="Pola Multivariat Antarprovinsi"
-          subtitle="Bayangkan 34 provinsi sebagai titik dalam ruang berdimensi banyak — setiap dimensi adalah satu indikator pembangunan."
+          subtitle="Dalam ruang dengan puluhan indikator, setiap provinsi tidak hanya menampilkan satu angka, tetapi posisi relatifnya di dalam sistem pembangunan nasional."
           narration={
-            <>
-              Setiap provinsi Indonesia membawa sepuluh indikator pembangunan sekaligus: IPM,
-              kemiskinan, pendidikan, listrik, air bersih, sanitasi, dan lainnya. Dari atas,
-              semuanya tampak menyatu. Tapi ketika kita mereduksi dimensi-dimensi itu ke dalam
-              dua sumbu utama, pola ketimpangan yang tersembunyi mulai terungkap.
-            </>
+              <>
+                Sepuluh indikator utama menggambarkan kondisi pembangunan di setiap provinsi. Melalui PCA,
+                indikator tersebut dirangkum ke dalam dua sumbu utama sehingga pola dan perbedaan karakteristik
+                antarwilayah dapat terlihat lebih jelas.
+              </>
           }
           context={
             <>
-              <strong className="text-ink">Mengapa data ini penting?</strong>
+              <strong className="text-ink">Yang paling mencolok:</strong>
               <br />
-              Analisis multivariat memungkinkan kita melihat hubungan simultan antar indikator
-              yang tidak terlihat jika diperiksa satu per satu. PCA mengompresi banyak variabel
-              menjadi sedikit sumbu yang masih menyimpan sebagian besar informasi.
+PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbeda. Wilayah dengan capaian lebih rendah cenderung memiliki akses layanan dasar yang juga lebih terbatas.
             </>
           }
         >
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-6">
+            {chapterOneHighlights.map(item => (
+              <div key={item.label} className="story-stat-card">
+                <div className="story-stat-label">{item.label}</div>
+                <div className="story-stat-value">{item.value}</div>
+                <div className="story-stat-note">{item.note}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)] gap-5 lg:items-stretch">
+            <div className="lg:col-span-1 flex h-full flex-col gap-4">
               <ProvinceSelector
                 provinces={ALL_PROVINCES}
                 selected={highlighted}
                 onToggle={toggleProvince}
                 onClear={() => setHighlighted(new Set())}
               />
-              <div className="mt-4 bg-white border border-line rounded-xl p-4">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-muted mb-3">
-                  Variansi Dijelaskan
+
+              {pcaTab === 'matrix' && (
+                <div className="w-full rounded-xl border border-line bg-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <h4 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+                      Filter korelasi
+                    </h4>
+                    <button
+                      type="button"
+                      className="text-[10px] font-semibold uppercase tracking-[0.12em] text-accent hover:text-accent/80"
+                      onClick={() => setFocusPair(['ipm', 'kemiskinan'])}
+                    >
+                      Reset
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+                        Variabel 1
+                      </label>
+                      <select
+                        value={focusPair[0]}
+                        onChange={e => updateFocusPair(0, e.target.value)}
+                        className="w-full rounded-lg border border-line bg-canvas px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+                      >
+                        {MATRIX_VARIABLES.map(key => (
+                          <option key={key} value={key}>{INDICATOR_LABELS[key]}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+                        Variabel 2
+                      </label>
+                      <select
+                        value={focusPair[1]}
+                        onChange={e => updateFocusPair(1, e.target.value)}
+                        className="w-full rounded-lg border border-line bg-canvas px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+                      >
+                        {MATRIX_VARIABLES.map(key => (
+                          <option key={key} value={key}>{INDICATOR_LABELS[key]}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-lg border border-accent/20 bg-accent/5 px-3 py-2">
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Pasangan yang disorot</div>
+                    <div className="mt-1 flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-ink">
+                        {INDICATOR_LABELS[focusPair[0]]} × {INDICATOR_LABELS[focusPair[1]]}
+                      </span>
+                      <span className="text-sm font-bold text-accent">r = {focusCorrelation.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="w-full h-full rounded-xl border border-line bg-white p-4 shadow-sm">
+                <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+                  Variansi dijelaskan
                 </h4>
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-ink-soft">Komponen 1</span>
                     <span className="font-semibold text-ink">{pcaResult.summary.pc1Variance.toFixed(1)}%</span>
                   </div>
-                  <div className="h-2 bg-line-soft rounded-full overflow-hidden">
-                    <div className="h-full bg-accent rounded-full transition-all duration-500"
+                  <div className="h-2 overflow-hidden rounded-full bg-line-soft">
+                    <div className="h-full rounded-full bg-accent transition-all duration-500"
                       style={{ width: `${pcaResult.summary.pc1Variance}%` }} />
                   </div>
-                  <div className="flex items-center justify-between text-sm pt-1">
+                  <div className="flex items-center justify-between pt-1 text-sm">
                     <span className="text-ink-soft">Komponen 2</span>
                     <span className="font-semibold text-ink">{pcaResult.summary.pc2Variance.toFixed(1)}%</span>
                   </div>
-                  <div className="h-2 bg-line-soft rounded-full overflow-hidden">
-                    <div className="h-full bg-warm rounded-full transition-all duration-500"
+                  <div className="h-2 overflow-hidden rounded-full bg-line-soft">
+                    <div className="h-full rounded-full bg-warm transition-all duration-500"
                       style={{ width: `${pcaResult.summary.pc2Variance}%` }} />
                   </div>
-                  <div className="flex items-center justify-between text-sm pt-2 border-t border-line-soft mt-2">
+                  <div className="mt-2 flex items-center justify-between border-t border-line-soft pt-2 text-sm">
                     <span className="text-ink-soft font-medium">Total</span>
                     <span className="font-bold text-ink">{pcaResult.summary.totalVariance.toFixed(1)}%</span>
                   </div>
@@ -232,12 +405,12 @@ export default function App() {
               </div>
             </div>
 
-            <div className="lg:col-span-2">
-              <div className="flex items-center justify-between mb-4">
+            <div className="lg:col-span-1 min-w-0 flex h-full flex-col">
+              <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
                 <h3 className="text-base font-semibold text-ink">
-                  {pcaTab === 'pca' && 'Sebaran Provinsi dalam Ruang Tereduksi'}
-                  {pcaTab === 'parallel' && 'Profil Indikator Antarprovinsi'}
-                  {pcaTab === 'matrix' && 'Matriks Korelasi Indikator'}
+                  {pcaTab === 'pca' && 'Sebaran provinsi dalam ruang tereduksi'}
+                  {pcaTab === 'parallel' && 'Profil indikator antarprovinsi'}
+                  {pcaTab === 'matrix' && 'Matriks korelasi indikator (diagonal = 1.00, korelasi diri)'}
                 </h3>
                 <TabSwitcher
                   options={[
@@ -250,18 +423,12 @@ export default function App() {
                 />
               </div>
 
-              <div className="bg-white border border-line rounded-xl p-4 sm:p-6 overflow-x-auto">
-                {pcaTab === 'pca' && (
-                  <>
+              <div className="flex h-full flex-col rounded-xl border border-line bg-white p-4 sm:p-6 shadow-sm">
+                <div className="overflow-x-auto min-h-[420px] flex-1">
+                  {pcaTab === 'pca' && (
                     <PCAScatter points={pcaResult.points} summary={pcaResult.summary} width={920} height={560} />
-                    <ChartCaption>
-                      Setiap titik adalah satu provinsi. Sumbu merupakan kombinasi linear
-                      terstandardisasi dari 10 indikator pembangunan. Warna menunjukkan pulau.
-                    </ChartCaption>
-                  </>
-                )}
-                {pcaTab === 'parallel' && (
-                  <>
+                  )}
+                  {pcaTab === 'parallel' && (
                     <ParallelCoordinates
                       data={PROVINCE_DATA}
                       variables={[...INDICATOR_KEYS]}
@@ -269,87 +436,94 @@ export default function App() {
                       width={920}
                       height={460}
                     />
-                    <ChartCaption>
-                      Garis berwarna merepresentasikan provinsi yang disorot; garis abu-abu
-                      adalah provinsi lainnya. Setiap sumbu vertikal adalah satu indikator.
-                    </ChartCaption>
-                  </>
-                )}
-                {pcaTab === 'matrix' && (
-                  <>
+                  )}
+                  {pcaTab === 'matrix' && (
                     <ScatterMatrix
                       data={PROVINCE_DATA}
-                      variables={[...INDICATOR_KEYS]}
+                      variables={MATRIX_VARIABLES}
                       highlighted={highlighted}
+                      focusPair={focusPair}
                       width={920}
                     />
-                    <ChartCaption>
-                      Diagonal menunjukkan nilai korelasi (r) antar indikator. Selain diagonal
-                      adalah sebar bivariate. Warna menunjukkan pulau asal provinsi.
-                    </ChartCaption>
-                  </>
+                  )}
+                </div>
+
+                {pcaTab === 'pca' && (
+                  <ChartCaption>
+                    Setiap titik mewakili satu provinsi. Sumbu menggambarkan kombinasi linear dari sepuluh indikator,
+                    sementara warna membedakan asal pulau.
+                  </ChartCaption>
+                )}
+                {pcaTab === 'parallel' && (
+                  <ChartCaption>
+                    Garis berwarna menunjukkan provinsi yang disorot; garis abu-abu adalah provinsi lain. Setiap
+                    sumbu mewakili satu indikator pembangunan.
+                  </ChartCaption>
+                )}
+                {pcaTab === 'matrix' && (
+                  <ChartCaption>
+                    Diagonal menampilkan korelasi sebuah indikator dengan dirinya sendiri, sehingga nilainya selalu 1.00.
+                    Sel di luar diagonal menunjukkan hubungan bivariat antar indikator; semakin mendekati 1 atau -1,
+                    semakin kuat hubungan liniernya. Warna mencerminkan kelompok pulau.
+                  </ChartCaption>
                 )}
               </div>
-
-              <InsightPanel title="Apa yang terungkap?">
-                <p>
-                  <strong>{topIPM.provinsi}</strong> memiliki IPM tertinggi ({topIPM.ipm.toFixed(1)}),
-                  sementara <strong>{bottomIPM.provinsi}</strong> berada di posisi terendah
-                  ({bottomIPM.ipm.toFixed(1)}). Korelasi antara IPM dan kemiskinan sangat kuat
-                  (r = {corrIPMKemiskinan.toFixed(2)}), menunjukkan bahwa keduanya saling berkelindan.
-                  Akses elektrifikasi berkorelasi positif dengan IPM (r = {corrIPMElektrifikasi.toFixed(2)}),
-                  menandakan infrastruktur dasar adalah fondasi pembangunan manusia.
-                </p>
-              </InsightPanel>
             </div>
+          </div>
+
+          <div className="mt-6">
+            <InsightPanel title="Apa yang terungkap?">
+              <p>
+                <strong>{topIPM.provinsi}</strong> menempati puncak IPM dengan nilai {topIPM.ipm.toFixed(1)}, sementara
+                <strong> {bottomIPM.provinsi}</strong> berada di ujung bawah dengan {bottomIPM.ipm.toFixed(1)}. Korelasi
+                antara IPM dan kemiskinan sangat kuat, yaitu r = {corrIPMKemiskinan.toFixed(2)}, yang menandakan bahwa
+                ketika kemiskinan menekan, kualitas hidup manusia tidak naik secara merata. Di sisi lain, akses listrik
+                berkorelasi positif dengan IPM (r = {corrIPMElektrifikasi.toFixed(2)}), artinya jaringan dasar listrik,
+                bukan sekadar indikator teknis, adalah fondasi yang membuka ruang untuk pendidikan, layanan kesehatan, dan
+                produktivitas rumah tangga.
+              </p>
+            </InsightPanel>
           </div>
         </ChapterSection>
       </div>
 
       <TransitionQuote
-        quote="Angka-angka provinsi adalah rata-rata yang menyembunyikan kisah yang lebih dalam — di baliknya, ratusan kabupaten dan kota menyimpan jurang ketimpangan yang tak terlihat dari atas."
+        quote="Satu angka tidak pernah menceritakan semuanya. Di balik rata-rata nasional, terdapat kesenjangan wilayah yang membentuk perbedaan peluang dan masa depan."
       />
 
-      {/* BAB 2: GEOSPASIAL */}
       <div id="bab-2" className="scroll-mt-16">
         <ChapterSection
-          chapter=""
-          title="Kesenjangan Spasial Antarkabupaten/Kota"
-          subtitle="Dari ketinggian provinsi, kita turun ke permukaan bumi — geografi bukan sekadar latar, geografi adalah nasib."
+          chapter="Bab 2"
+          title="Kesenjangan Spasial di Bawah Level Provinsi"
+          subtitle="Ketika kita menuruni skala dari provinsi ke kabupaten dan kota, pola geografis yang lebih tajam mulai tampak."
           narration={
             <>
-              Setiap kabupaten dan kota memiliki warna sendiri dalam peta ketimpangan. Sebuah
-              kota besar bisa bersinar terang dengan IPM tinggi, sementara kabupaten tetangganya
-              yang berbatasan langsung tertinggal jauh. Peta choropleth mengungkap konsentrasi
-              geografis dan memperlihatkan pola ketimpangan yang muncul di ruang nyata.
+              Dalam pembangunan, jarak bukan hanya soal lokasi, tetapi juga akses, layanan, dan peluang. Peta choropleth membantu melihat bagaimana kondisi antarwilayah berbeda dan menunjukkan daerah yang menyimpang dari pola umum.
             </>
           }
           context={
             <>
-              <strong className="text-ink">Mengapa data ini penting?</strong>
+              <strong className="text-ink">Yang perlu dibedakan:</strong>
               <br />
-              Visualisasi spasial mengungkap di mana indikator menggerombol dan di mana terjadi
-              lompatan dramatis antar wilayah bertetangga — pola yang tak terlihat dalam
-              tabel angka.
+              Kesenjangan tidak hanya terlihat dari rata-rata provinsi, tetapi juga dari sebarannya di setiap wilayah. Daerah yang berdekatan pun bisa memiliki akses layanan yang berbeda, sehingga angka agregat belum tentu menggambarkan kondisi sebenarnya.
             </>
           }
         >
-          {/* Spatial metric summary by pulau */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
-            {spatialByPulau.map(g => (
-              <div key={g.pulau} className="bg-white border border-line rounded-lg px-3 py-3">
-                <div className="text-xs font-medium text-ink-muted truncate">{g.pulau}</div>
-                <div className="text-lg font-bold text-ink mt-1">{g.avgIPM.toFixed(1)}</div>
-                <div className="text-[0.65rem] text-ink-muted">IPM rata-rata</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-6">
+            {chapterTwoHighlights.map(item => (
+              <div key={item.label} className="story-stat-card">
+                <div className="story-stat-label">{item.label}</div>
+                <div className="story-stat-value">{item.value}</div>
+                <div className="story-stat-note">{item.note}</div>
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-1">
-              <div className="bg-white border border-line rounded-xl p-4 mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-6 lg:items-stretch">
+            <div className="lg:col-span-1 flex h-full flex-col gap-4">
+              <div className="bg-white border border-line rounded-xl p-4 shadow-sm">
                 <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted block mb-3">
-                  Indikator Peta
+                  Indikator peta
                 </label>
                 <select
                   value={mapMetric}
@@ -361,16 +535,17 @@ export default function App() {
                   ))}
                 </select>
               </div>
-              <div className="bg-white border border-line rounded-xl p-4">
+
+              <div className="flex-1 bg-white border border-line rounded-xl p-4 shadow-sm">
                 <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-muted mb-3">
-                  Perbandingan AntarPulau
+                  Perbandingan antar pulau
                 </h4>
                 <div className="space-y-3">
                   {spatialByPulau.map(g => {
                     const maxIPM = spatialByPulau[0].avgIPM;
                     return (
                       <div key={g.pulau}>
-                        <div className="flex items-center justify-between text-xs mb-1">
+                        <div className="flex items-center justify-between text-[11px] mb-1.5">
                           <span className="text-ink-soft truncate">{g.pulau}</span>
                           <span className="font-semibold text-ink">{g.avgIPM.toFixed(1)}</span>
                         </div>
@@ -387,10 +562,10 @@ export default function App() {
               </div>
             </div>
 
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-1">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-semibold text-ink">
-                  Peta Choropleth — {mapMetricInfo.label}
+                  Peta choropleth "{mapMetricInfo.label}"
                 </h3>
               </div>
 
@@ -407,8 +582,8 @@ export default function App() {
                       height={560}
                     />
                     <ChartCaption>
-                      Warna provinsi merepresentasikan nilai {mapMetricInfo.label.toLowerCase()}.
-                      Wilayah yang disorot memiliki garis tepi lebih tebal.
+                      Warna wilayah merepresentasikan nilai {mapMetricInfo.label.toLowerCase()}. Wilayah yang disorot
+                      memiliki garis tepi lebih tebal agar lebih mudah dibedakan.
                     </ChartCaption>
                   </>
                 )}
@@ -419,52 +594,57 @@ export default function App() {
                 )}
               </div>
 
-              <InsightPanel title="Pola yang terlihat">
-                <p>
-                  Wilayah Indonesia Timur — terutama Maluku dan Papua — secara konsisten
-                  menunjukkan IPM lebih rendah dan kemiskinan lebih tinggi dibanding wilayah
-                  barat. Namun PDRB per kapita Papua relatif tinggi berkat sektor pertambangan,
-                  menunjukkan bahwa kekayaan sumber daya tidak otomatis menjamin kesejahteraan
-                  manusia. Jurang antara kota dan kabupaten pedalamanan menjadi pola berulang.
-                </p>
-              </InsightPanel>
             </div>
+          </div>
+
+          <div className="mt-6">
+            <InsightPanel title="Pola yang terlihat">
+              <p>
+                Indonesia Timur, terutama Maluku dan Papua, masih menunjukkan profil pembangunan yang lebih rendah
+                dibandingkan wilayah barat. Konsentrasi kemiskinan dan lemahnya akses terhadap layanan dasar membuat
+                ketimpangan terasa semakin nyata di kehidupan sehari-hari, bukan hanya dalam angka. Di sisi lain,
+                wilayah dengan pendapatan tinggi belum otomatis menjamin kualitas hidup yang seimbang, karena sumber
+                daya alam saja tidak cukup tanpa pemerataan akses, infrastruktur, dan kapasitas lokal.
+              </p>
+            </InsightPanel>
           </div>
         </ChapterSection>
       </div>
 
       <TransitionQuote
-        quote="Jika geografi adalah panggung ketimpangan, maka ekonomi adalah naskahnya — setiap sektor memegang porsi yang tidak adil dari cerita kekayaan bangsa."
+        quote="Ketimpangan tidak tersebar secara merata. Perbedaan jarak, akses, dan kondisi antarwilayah ikut membentuk kesenjangan yang ada."
       />
 
-      {/* BAB 3: HIERARKI */}
       <div id="bab-3" className="scroll-mt-16">
         <ChapterSection
-          chapter=""
-          title="Struktur Hierarki Ekonomi Nasional"
-          subtitle="Sembilan sektor, puluhan subsektor, ratusan rincian — masing-masing memegang porsi berbeda dari kue nasional."
+          chapter="Bab 3"
+          title="Struktur Ekonomi yang Tidak Merata"
+          subtitle="PDB nasional bukan hanya sekadar angka besar; ia adalah peta distribusi nilai tambah dan kekuatan ekonomi antar sektor."
           narration={
             <>
-              Cerita ketimpangan tidak berakhir di wilayah. Ia berakar juga pada struktur ekonomi
-              yang membentuk nilai tambah bangsa. Treemap dan sunburst memungkinkan kita melihat
-              siapa yang memegang lapisan terbesar, dan siapa yang hanya mendapat remah. Ukuran
-              setiap blok merepresentasikan nilai ekonomi dalam triliun rupiah, sementara warna
-              mengindikasikan sektor.
+              Ketimpangan pembangunan juga tercermin dari bagaimana nilai ekonomi tersebar antar sektor. Treemap dan sunburst menunjukkan struktur PDB dari tingkat sektor hingga rincian, sehingga terlihat sektor yang menjadi penggerak utama sekaligus sektor yang kontribusinya masih relatif kecil.
             </>
           }
           context={
             <>
-              <strong className="text-ink">Mengapa data ini penting?</strong>
+              <strong className="text-ink">Yang paling berpengaruh:</strong>
               <br />
-              Struktur hierarki PDB menunjukkan komposisi ekonomi nasional dalam tiga jenjang:
-              sektor, subsektor, dan rincian. Klik pada komponen untuk drill-down dan mengamati
-              dekomposisi internal.
+              Struktur ekonomi tidak hanya dilihat dari besarnya output, tetapi juga dari bagaimana nilai tambah tersebar. Ketika ekonomi didominasi oleh beberapa sektor, pertumbuhan nasional belum tentu dirasakan secara merata oleh masyarakat.
             </>
           }
         >
-          {/* Sector summary bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-6">
+            {chapterThreeHighlights.map(item => (
+              <div key={item.label} className="story-stat-card">
+                <div className="story-stat-label">{item.label}</div>
+                <div className="story-stat-value">{item.value}</div>
+                <div className="story-stat-note">{item.note}</div>
+              </div>
+            ))}
+          </div>
+
           <div className="mb-8">
-            <h3 className="text-sm font-semibold text-ink mb-3">Kontribusi 9 Sektor terhadap PDB</h3>
+            <h3 className="text-sm font-semibold text-ink mb-3">Kontribusi 9 sektor terhadap PDB</h3>
             <div className="flex h-8 rounded-lg overflow-hidden border border-line">
               {sectorTotals.map((s, i) => {
                 const colors = ['#5b9a6a','#8b6b3e','#1a7f8a','#e8a838','#9b6fa8','#3b82f6','#d97742','#ec5f5f','#6b7f94'];
@@ -500,9 +680,9 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
             <h3 className="text-base font-semibold text-ink">
-              {hierarchyTab === 'treemap' ? 'Treemap — Proporsi Nilai Ekonomi' : 'Sunburst — Struktur Radial'}
+              {hierarchyTab === 'treemap' ? 'Treemap "Proporsi Nilai Ekonomi"' : 'Sunburst "Struktur Radial"'}
             </h3>
             <TabSwitcher
               options={[
@@ -519,8 +699,8 @@ export default function App() {
               <>
                 <Treemap data={HIERARCHY_DATA} width={1160} height={600} />
                 <ChartCaption>
-                  Ukuran blok merepresentasikan nilai (triliun rupiah). Warna menunjukkan sektor,
-                  intensitas warna mengindikasikan kontribusi terhadap PDB. Hover untuk detail.
+                  Simbol ukuran menunjukkan nilai ekonomi pada tiap blok, sementara warna membedakan sektor. Semakin gelap
+                  atau lebih dominan, semakin besar kontribusinya terhadap total PDB.
                 </ChartCaption>
               </>
             )}
@@ -528,43 +708,92 @@ export default function App() {
               <>
                 <Sunburst data={HIERARCHY_DATA} width={780} height={600} />
                 <ChartCaption>
-                  Ring terdalam adalah sektor, ring tengah adalah subsektor, ring terluar adalah
-                  rincian. Hover untuk detail nilai dan kontribusi.
+                  Ring terdalam mewakili sektor, ring tengah subsektor, dan ring terluar rincian aktivitas. Skema warna
+                  tetap konsisten untuk memudahkan pembacaan antar tingkat.
                 </ChartCaption>
               </>
             )}
           </div>
 
-          <InsightPanel title="Insight Struktur Ekonomi">
-            <p>
-              Sektor <strong>{sectorTotals[0].sektor}</strong> menjadi penyumbang terbesar PDB
-              ({((sectorTotals[0].nilai / totalPDB) * 100).toFixed(1)}%,
-              {' '}{sectorTotals[0].nilai.toLocaleString('id-ID')} triliun rupiah), diikuti oleh
-              <strong> {sectorTotals[1].sektor}</strong> ({((sectorTotals[1].nilai / totalPDB) * 100).toFixed(1)}%).
-              Struktur ekonomi Indonesia masih bertumpu pada sektor sekunder dan tersier,
-              sementara sektor primer seperti pertanian — yang menyerap jutaan tenaga kerja —
-              menyumbang porsi yang lebih kecil terhadap nilai tambah nasional.
-            </p>
-          </InsightPanel>
+          <div className="mt-6">
+            <InsightPanel title="Insight struktur ekonomi">
+              <p>
+                Sektor <strong>{sectorTotals[0].sektor}</strong> menjadi penyumbang utama PDB, dengan kontribusi sekitar
+                {((sectorTotals[0].nilai / totalPDB) * 100).toFixed(1)}% ({sectorTotals[0].nilai.toLocaleString('id-ID')} triliun rupiah),
+                diikuti oleh <strong>{sectorTotals[1].sektor}</strong> dengan {((sectorTotals[1].nilai / totalPDB) * 100).toFixed(1)}%.
+                Artinya, pertumbuhan ekonomi nasional masih sangat berpusat pada sektor dengan nilai tambah tinggi, sementara
+                sektor yang lebih luas dan padat tenaga kerja tumbuh lebih lambat dalam porsi kontribusinya. Ini menjadi sinyal
+                bahwa ekspansi kesejahteraan belum sepenuhnya merata ke seluruh lapisan kegiatan ekonomi.
+              </p>
+            </InsightPanel>
+          </div>
         </ChapterSection>
       </div>
 
-      {/* EPILOG */}
       <div id="epilog" className="scroll-mt-16">
         <TransitionQuote
-          quote="Data tidak berbohong, tetapi juga tidak berbicara sendiri. Dalam ketimpangan yang terukur, terdapat manusia yang tidak terhitung."
+          quote="Ketimpangan bukan sekadar angka. Di dalamnya terdapat perbedaan akses, peluang, dan kesempatan untuk membangun masa futur."
         />
-        <div className="max-w-3xl mx-auto px-6 sm:px-8 pb-20 text-center">
-          <p className="text-sm text-ink-muted leading-relaxed">
-            Dashboard Data Storytelling BPS — dirancang untuk eksplorasi analitik.
-            <br />
-            Setiap angka membawa cerita. Setiap cerita membawa pertanyaan.
-            <br />
-            Setiap pertanyaan membawa kita lebih dekat ke keadilan.
-          </p>
-          <p className="text-xs text-ink-muted mt-6">
-            Sumber: Badan Pusat Statistik (BPS) — Visualisasi Data & Informasi
-          </p>
+
+        <div className="max-w-5xl mx-auto px-6 sm:px-8 pb-20">
+          <div className="mb-8 text-center">
+            <h3 className="mt-3 text-3xl font-bold tracking-[-0.04em] text-ink sm:text-4xl">
+              3 insight yang paling menentukan
+            </h3>
+          </div>
+
+          <div className="space-y-4">
+            <article className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Insight 01</div>
+              <h4 className="text-xl font-bold text-ink">IPM dan kemiskinan bergerak seiring.</h4>
+              <p className="mt-2 text-sm leading-7 text-ink-soft">
+                Kualitas hidup tidak naik secara merata ketika kemiskinan tetap tinggi. Korelasi yang kuat menunjukkan
+                bahwa kesejahteraan tidak hanya ditentukan oleh pendapatan semata, tetapi juga oleh kapasitas wilayah
+                dalam menurunkan pengeluaran dan memperluas akses terhadap kebutuhan dasar.
+              </p>
+            </article>
+
+            <article className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Insight 02</div>
+              <h4 className="text-xl font-bold text-ink">Listrik adalah pengungkit kesejahteraan.</h4>
+              <p className="mt-2 text-sm leading-7 text-ink-soft">
+                Akses dasar seperti listrik menjadi fondasi penting bagi pendidikan, kesehatan, dan produktivitas rumah
+                tangga. Artinya, infrastruktur dasar bukan pelengkap teknis, melainkan prasyarat agar manfaat
+                pembangunan benar-benar menjangkau masyarakat.
+              </p>
+            </article>
+
+            <article className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Insight 03</div>
+              <h4 className="text-xl font-bold text-ink">Ekonomi nasional masih sangat terkonsentrasi.</h4>
+              <p className="mt-2 text-sm leading-7 text-ink-soft">
+                Nilai tambah ekonomi belum terdistribusi secara merata. Sektor bernilai tinggi mendominasi struktur PDB,
+                sehingga pertumbuhan agregat bisa terlihat kuat, tetapi dampaknya terhadap kesejahteraan masyarakat luas
+                masih terbatas dan belum sepenuhnya merata di wilayah yang tertinggal.
+              </p>
+            </article>
+          </div>
+
+          <div className="mt-28">
+            <blockquote className="relative mx-auto max-w-4xl pl-0 text-justify text-[1.08rem] font-medium italic leading-[1.9] text-ink sm:text-[1.5rem]">
+              <span className="absolute -left-1 -top-8 text-[3.5rem] font-bold leading-none text-ink/10">“</span>
+              Peningkatan kesejahteraan tidak cukup hanya dijalankan melalui pertumbuhan agregat. Untuk benar-benar
+              mengurangi ketimpangan, perlu ada pemerataan akses, penguatan infrastruktur dasar, dan perluasan peluang
+              ekonomi di wilayah yang tertinggal.
+              <span className="ml-1 text-[3.5rem] align-middle font-bold leading-none text-ink/10">”</span>
+            </blockquote>
+          </div>
+
+          <div className="mt-12 pb-8">
+            <div className="mx-auto flex max-w-[300px] items-center justify-center gap-3">
+              <span className="h-px flex-1 bg-gradient-to-r from-transparent via-ink/20 to-transparent" />
+              <div className="inline-flex items-center rounded-full border border-line bg-white/90 px-4 py-2 shadow-[0_10px_30px_rgba(21,50,37,0.06)] backdrop-blur-sm">
+                <span className="text-[0.68rem] font-semibold uppercase tracking-[0.46em] text-ink">THE END</span>
+              </div>
+              <span className="h-px flex-1 bg-gradient-to-r from-transparent via-ink/20 to-transparent" />
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

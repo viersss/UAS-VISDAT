@@ -7,6 +7,7 @@ interface Props {
   data: ProvinceDatum[];
   variables: string[];
   highlighted: Set<string>;
+  focusPair?: [string, string] | null;
   width?: number;
 }
 
@@ -19,7 +20,29 @@ const PULAU_COLORS: Record<string, string> = {
   'Maluku-Papua': '#ec5f5f',
 };
 
-export default function ScatterMatrix({ data, variables, highlighted, width = 720 }: Props) {
+function formatMatrixLabel(label: string) {
+  const clean = label.replace(/\s+/g, ' ').trim();
+  if (clean.length <= 10) return [clean];
+
+  const words = clean.split(' ');
+  const lines: string[] = [];
+  let current = '';
+
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length <= 10 || !current) {
+      current = candidate;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+  }
+
+  if (current) lines.push(current);
+  return lines.slice(0, 2);
+}
+
+export default function ScatterMatrix({ data, variables, highlighted, focusPair = null, width = 720 }: Props) {
   const ref = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
@@ -28,11 +51,13 @@ export default function ScatterMatrix({ data, variables, highlighted, width = 72
 
     const vars = variables.slice(0, 5);
     const n = vars.length;
-    const pad = 70;
-    const cellW = Math.max(90, (width - pad) / n);
-    const cellH = cellW;
-    const height = cellH * n + pad;
-    const labelH = 36;
+    const padX = 62;
+    const padY = 28;
+    const maxChartWidth = Math.min(width, 620);
+    const cellSize = Math.min((maxChartWidth - padX) / n, 108);
+    const cellW = cellSize;
+    const cellH = cellSize;
+    const [focusVarA, focusVarB] = focusPair ?? ['', ''];
 
     const hasHighlight = highlighted.size > 0;
 
@@ -44,34 +69,50 @@ export default function ScatterMatrix({ data, variables, highlighted, width = 72
         const yVals = data.map(d => d[yVar as keyof ProvinceDatum] as number);
         const xScale = d3.scaleLinear().domain(d3.extent(xVals) as [number, number]).nice().range([8, cellW - 8]);
         const yScale = d3.scaleLinear().domain(d3.extent(yVals) as [number, number]).nice().range([cellH - 8, 8]);
+        const isFocusedPair = Boolean(focusVarA && focusVarB) && (
+          (xVar === focusVarA && yVar === focusVarB) ||
+          (xVar === focusVarB && yVar === focusVarA)
+        );
 
         const cellG = svg.append('g')
-          .attr('transform', `translate(${pad + col * cellW}, ${labelH + row * cellH})`);
+          .attr('transform', `translate(${padX + col * cellW}, ${padY + row * cellH})`);
 
         // Cell border
         cellG.append('rect')
           .attr('width', cellW).attr('height', cellH)
-          .attr('fill', '#fafbfc')
-          .attr('stroke', '#e2e8ed').attr('stroke-width', 0.5);
+          .attr('fill', isFocusedPair ? '#f0fdf4' : '#fafbfc')
+          .attr('stroke', isFocusedPair ? '#1a7f8a' : '#e2e8ed')
+          .attr('stroke-width', isFocusedPair ? 1.5 : 0.5);
 
         if (row === col) {
           // Diagonal: correlation value with variable label
           const r = pearson(xVals, yVals);
+          const diagonalValue = r.toFixed(2);
           cellG.append('text')
-            .attr('x', cellW / 2).attr('y', cellH / 2 - 6)
+            .attr('x', cellW / 2).attr('y', cellH / 2 - 10)
             .attr('text-anchor', 'middle')
             .style('font-size', '18px')
             .style('font-weight', '700')
             .style('fill', Math.abs(r) > 0.6 ? '#1a7f8a' : '#6b8294')
-            .text(r.toFixed(2));
-          cellG.append('text')
-            .attr('x', cellW / 2).attr('y', cellH / 2 + 16)
+            .text(diagonalValue);
+
+          cellG.append('title').text(`Korelasi ${INDICATOR_LABELS[xVar] || xVar} dengan dirinya sendiri: ${diagonalValue}. Nilai 1.00 berarti korelasi sempurna.`);
+
+          const labelText = cellG.append('text')
+            .attr('x', cellW / 2)
+            .attr('y', cellH / 2 + 12)
             .attr('text-anchor', 'middle')
             .style('font-size', '9px')
             .style('fill', '#6b8294')
-            .style('text-transform', 'uppercase')
-            .style('letter-spacing', '0.06em')
-            .text(INDICATOR_LABELS[xVar] || xVar);
+            .style('letter-spacing', '0.04em');
+
+          const diagLabel = formatMatrixLabel(INDICATOR_LABELS[xVar] || xVar);
+          diagLabel.forEach((line, idx) => {
+            labelText.append('tspan')
+              .attr('x', cellW / 2)
+              .attr('dy', idx === 0 ? 0 : 10)
+              .text(line);
+          });
         } else {
           // Scatter
           // Grid lines
@@ -97,31 +138,56 @@ export default function ScatterMatrix({ data, variables, highlighted, width = 72
 
         // Axis labels
         if (row === n - 1) {
-          cellG.append('text')
-            .attr('x', cellW / 2).attr('y', cellH + 14)
+          const bottomLabel = cellG.append('text')
+            .attr('x', cellW / 2)
+            .attr('y', cellH + 14)
             .attr('text-anchor', 'middle')
-            .style('font-size', '9px')
+            .style('font-size', '8.5px')
             .style('fill', '#6b8294')
-            .style('text-transform', 'uppercase')
-            .style('letter-spacing', '0.04em')
-            .text(INDICATOR_LABELS[xVar] || xVar);
+            .style('letter-spacing', '0.04em');
+
+          const labelLines = formatMatrixLabel(INDICATOR_LABELS[xVar] || xVar);
+          labelLines.forEach((line, idx) => {
+            bottomLabel.append('tspan')
+              .attr('x', cellW / 2)
+              .attr('dy', idx === 0 ? 0 : 10)
+              .text(line);
+          });
         }
         if (col === 0) {
-          cellG.append('text')
+          const leftLabel = cellG.append('text')
             .attr('transform', 'rotate(-90)')
-            .attr('x', -cellH / 2).attr('y', -8)
+            .attr('x', -cellH / 2)
+            .attr('y', -8)
             .attr('text-anchor', 'middle')
-            .style('font-size', '9px')
+            .style('font-size', '8.5px')
             .style('fill', '#6b8294')
-            .style('text-transform', 'uppercase')
-            .style('letter-spacing', '0.04em')
-            .text(INDICATOR_LABELS[yVar] || yVar);
+            .style('letter-spacing', '0.04em');
+
+          const labelLines = formatMatrixLabel(INDICATOR_LABELS[yVar] || yVar);
+          labelLines.forEach((line, idx) => {
+            leftLabel.append('tspan')
+              .attr('x', -cellH / 2)
+              .attr('dy', idx === 0 ? 0 : 10)
+              .text(line);
+          });
         }
       }
     }
-  }, [data, variables, highlighted, width]);
+  }, [data, variables, highlighted, focusPair, width]);
+
+  const squareSize = Math.min(Math.max(520, width * 0.72), 620);
+  const matrixHeight = Math.min(420, 5 * 100 + 90);
 
   return (
-    <svg ref={ref} width={width} className="d3-chart w-full h-auto" style={{ maxWidth: width }} />
+    <div className="flex justify-center">
+      <svg
+        ref={ref}
+        width={squareSize}
+        height={matrixHeight}
+        className="d3-chart block h-auto w-full"
+        style={{ maxWidth: squareSize, overflow: 'visible', margin: '0 auto' }}
+      />
+    </div>
   );
 }

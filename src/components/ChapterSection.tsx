@@ -18,16 +18,13 @@ export default function ChapterSection({
   children,
 }: ChapterSectionProps) {
   return (
-    <section data-reveal className="max-w-[1360px] mx-auto px-6 sm:px-8 py-14 sm:py-20">
-      <div className="story-card mb-10 rounded-[26px] border border-line p-6 sm:p-8 shadow-card">
-        <div className="text-xs font-semibold tracking-[0.18em] uppercase text-accent mb-3">
-          {chapter}
-        </div>
-        <h2 className="text-3xl sm:text-4xl font-bold tracking-[-0.03em] text-ink leading-tight">
+    <section data-reveal data-parallax className="max-w-[1360px] mx-auto px-6 sm:px-8 py-14 sm:py-20">
+      <div className="story-card mb-10 rounded-[30px] border border-line/80 bg-[rgba(255,255,255,0.72)] p-6 sm:p-8 shadow-card backdrop-blur-sm">
+        <h2 className="whitespace-nowrap text-3xl font-bold tracking-[-0.03em] text-ink leading-tight sm:text-4xl">
           {title}
         </h2>
         {subtitle && (
-          <p className="font-serif italic text-lg text-ink-soft mt-3 leading-relaxed max-w-[60ch]">
+          <p className="font-serif italic text-lg text-ink-soft mt-3 leading-relaxed max-w-[62ch]">
             {subtitle}
           </p>
         )}
@@ -37,7 +34,7 @@ export default function ChapterSection({
               {narration}
             </p>
           </div>
-          <div className="lg:col-span-2 border-l-[3px] border-warm pl-5">
+          <div className="lg:col-span-2 border-l-[3px] border-warm/80 pl-5">
             <p className="text-sm text-ink-muted leading-[1.75] max-w-[48ch]">
               {context}
             </p>

@@ -6,9 +6,9 @@ interface InsightPanelProps {
 
 export default function InsightPanel({ title, children, className = '' }: InsightPanelProps) {
   return (
-    <div className={`my-6 rounded-[20px] border border-accent/15 bg-gradient-to-br from-accent-soft via-white to-warm-soft/70 px-5 py-4 shadow-card ${className}`}>
-      <p className="text-sm font-semibold uppercase tracking-[0.08em] text-accent mb-2">{title}</p>
-      <div className="text-sm text-ink-soft leading-[1.75]">{children}</div>
+    <div className={`my-6 w-full rounded-[26px] border border-accent/15 bg-gradient-to-br from-[#edf7f2] via-white to-[#fdf3ea] px-5 py-5 shadow-[0_16px_30px_rgba(15,23,42,0.04)] sm:px-6 ${className}`}>
+      <p className="mb-2 text-sm font-semibold uppercase tracking-[0.12em] text-accent">{title}</p>
+      <div className="text-[15px] leading-[1.9] text-ink-soft">{children}</div>
     </div>
   );
 }

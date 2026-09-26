@@ -17,15 +17,20 @@
   --paper: #fffdfb;
   --accent: #1d6d7b;
   --accent-soft: #e7f3f4;
+  --accent-deep: #0d4d5d;
   --warm: #e0824a;
   --warm-soft: #fcefe7;
+  --warm-deep: #b55e2b;
   --sand: #f5e7d8;
   --slate: #23394e;
 }
 
 * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 72px;
+}
 
 body {
   font-family: 'Inter', sans-serif;
@@ -35,9 +40,91 @@ body {
     linear-gradient(180deg, #f7f5f1 0%, #f2efe9 100%);
   color: var(--ink);
   font-feature-settings: "ss01", "cv11";
+  line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-parallax] {
+    will-change: transform;
+    transition: transform 0.35s ease-out;
+  }
 }
 
 .font-serif { font-family: 'Lora', serif; }
+
+.story-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.52rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.72);
+  border: 1px solid rgba(19,43,61,0.08);
+  box-shadow: 0 6px 18px rgba(19,43,61,0.03);
+  color: var(--ink-soft);
+}
+
+.story-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.9rem;
+}
+
+.story-kicker::before {
+  content: "";
+  display: block;
+  width: 2.25rem;
+  height: 1px;
+  background: linear-gradient(90deg, var(--warm), rgba(224, 130, 74, 0.3));
+}
+
+.story-stat-card {
+  position: relative;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(248,246,243,0.96));
+  border-radius: 18px;
+  padding: 1rem 1rem 0.9rem;
+  box-shadow: 0 10px 22px rgba(18, 34, 48, 0.03);
+  overflow: hidden;
+}
+
+.story-stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--warm));
+}
+
+.story-stat-label {
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 0.55rem;
+}
+
+.story-stat-value {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-size: 1.05rem;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.story-stat-note {
+  margin-top: 0.45rem;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
 
 /* Section enter animation */
 @keyframes riseIn {

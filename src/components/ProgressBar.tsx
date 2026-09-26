@@ -35,30 +35,30 @@ export default function ProgressBar({ items }: ProgressBarProps) {
   }, [items]);
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200/80 bg-white/75 backdrop-blur-xl shadow-[0_10px_25px_rgba(19,43,61,0.04)]">
-      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-slate-200/80">
+    <div className="fixed top-0 left-0 right-0 z-50 border-b border-emerald-200/80 bg-white/65 backdrop-blur-xl shadow-[0_8px_22px_rgba(16,84,67,0.08)]">
+      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-emerald-200/80">
         <div
-          className="h-full bg-gradient-to-r from-accent via-warm to-orange-400 transition-[width] duration-150 ease-out"
+          className="h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-400 transition-[width] duration-150 ease-out"
           style={{ width: `${progress}%` }}
         />
       </div>
       <div className="mx-auto flex h-14 max-w-[1360px] items-center justify-center px-6 sm:px-8">
-        <nav className="hidden items-center justify-center gap-1 sm:flex">
+        <nav className="hidden items-center justify-center gap-2 sm:flex">
           {items.map((item, i) => (
             <button
               key={item.id}
               onClick={() => document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' })}
-              className={`nav-pill rounded-full px-3 py-1.5 text-[11px] font-medium tracking-[0.02em] transition-all duration-200 ${
+              className={`nav-pill rounded-full border px-4 py-2 text-[11px] font-medium tracking-[0.02em] transition-all duration-200 ${
                 active === i
-                  ? 'bg-gradient-to-r from-accent-soft to-amber-50 text-accent-deep shadow-sm ring-1 ring-accent/10'
-                  : 'text-ink-muted hover:bg-slate-100 hover:text-ink-soft'
+                  ? 'border-emerald-300/80 bg-[linear-gradient(135deg,rgba(224,247,233,0.9),rgba(236,253,245,0.7))] text-emerald-900 shadow-[0_8px_22px_rgba(16,185,129,0.12)]'
+                  : 'border-emerald-100/80 bg-[rgba(255,255,255,0.28)] text-emerald-900/75 hover:bg-[rgba(255,255,255,0.42)] hover:text-emerald-900'
               }`}
             >
               {item.label}
             </button>
           ))}
         </nav>
-        <div className="text-xs font-medium text-ink-muted sm:hidden">
+        <div className="text-xs font-medium text-emerald-900/80 sm:hidden">
           {active + 1} / {items.length}
         </div>
       </div>
