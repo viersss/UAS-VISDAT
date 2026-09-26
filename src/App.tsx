@@ -262,9 +262,7 @@ export default function App() {
         title={<>Ketimpangan Pembangunan Indonesia</>}
         subtitle={
           <>
-            Dari Aceh sampai Papua, pembangunan tidak tumbuh secara seragam. Di balik rata-rata nasional,
-            terdapat provinsi yang melesat, kabupaten yang tertinggal, dan sektor ekonomi yang menikmati
-            nilai tambah jauh lebih besar daripada yang lain.
+              Dari Aceh hingga Papua, pembangunan Indonesia menunjukkan capaian yang berbeda antarwilayah. Di balik rata-rata nasional, terdapat daerah yang berkembang lebih cepat, tertinggal, serta sektor ekonomi dengan kontribusi nilai tambah yang berbeda.
           </>
         }
       >
