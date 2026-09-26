@@ -156,12 +156,12 @@ export default function App() {
 
       {/* HERO */}
       <Hero
-        eyebrow="Data Storytelling BPS — 2024"
+        eyebrow=""
         title={<>Ketimpangan Pembangunan Indonesia</>}
         subtitle={
           <>
             Dari Sabang sampai Merauke, angka-angka pembangunan tidak pernah terdistribusi merata.
-            Setiap provinsi, setiap kabupaten, setiap sektor ekonomi menyimpan kisahnya sendiri —
+            Setiap provinsi, setiap kabupaten, setiap sektor ekonomi menyimpan kisahnya sendiri,
             kisah tentang siapa yang maju, siapa yang tertinggal, dan mengapa kesenjangan itu terus bertumbuh.
           </>
         }
@@ -174,7 +174,7 @@ export default function App() {
       {/* BAB 1: MULTIVARIAT */}
       <div id="bab-1" className="scroll-mt-16">
         <ChapterSection
-          chapter="Babak I — Skala Makro"
+          chapter=""
           title="Pola Multivariat Antarprovinsi"
           subtitle="Bayangkan 34 provinsi sebagai titik dalam ruang berdimensi banyak — setiap dimensi adalah satu indikator pembangunan."
           narration={
@@ -313,7 +313,7 @@ export default function App() {
       {/* BAB 2: GEOSPASIAL */}
       <div id="bab-2" className="scroll-mt-16">
         <ChapterSection
-          chapter="Babak II — Skala Meso"
+          chapter=""
           title="Kesenjangan Spasial Antarkabupaten/Kota"
           subtitle="Dari ketinggian provinsi, kita turun ke permukaan bumi — geografi bukan sekadar latar, geografi adalah nasib."
           narration={
@@ -440,7 +440,7 @@ export default function App() {
       {/* BAB 3: HIERARKI */}
       <div id="bab-3" className="scroll-mt-16">
         <ChapterSection
-          chapter="Babak III — Struktur Ekonomi"
+          chapter=""
           title="Struktur Hierarki Ekonomi Nasional"
           subtitle="Sembilan sektor, puluhan subsektor, ratusan rincian — masing-masing memegang porsi berbeda dari kue nasional."
           narration={
