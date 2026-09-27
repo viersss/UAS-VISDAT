@@ -19,7 +19,7 @@ export default function ChapterSection({
 }: ChapterSectionProps) {
   return (
     <section data-reveal data-parallax className="max-w-[1360px] mx-auto px-6 sm:px-8 py-14 sm:py-20">
-      <div className="story-card mb-10 rounded-[30px] border border-line/80 bg-[rgba(255,255,255,0.72)] p-6 sm:p-8 shadow-card backdrop-blur-sm">
+      <div className="mb-10 sm:mb-14">
         <h2 className="whitespace-nowrap text-3xl font-bold tracking-[-0.03em] text-ink leading-tight sm:text-4xl">
           {title}
         </h2>

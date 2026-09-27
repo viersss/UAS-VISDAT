@@ -1,5 +1,7 @@
+import AnimatedNumber from './AnimatedNumber';
+
 interface MetricStripProps {
-  metrics: { label: string; value: string; sub?: string }[];
+  metrics: { label: string; value: string | React.ReactNode; sub?: string }[];
 }
 
 const ACCENTS = ['bg-accent', 'bg-warm', 'bg-accent', 'bg-warm', 'bg-accent'];
@@ -18,7 +20,7 @@ export default function MetricStrip({ metrics }: MetricStripProps) {
               {m.label}
             </span>
             <span className="mt-4 block text-[1.55rem] font-bold leading-none tracking-[-0.05em] text-ink sm:text-[1.9rem]">
-              {m.value}
+              <AnimatedNumber value={m.value} />
             </span>
             {m.sub && (
               <span className="mt-1.5 block text-[0.68rem] text-ink-muted sm:text-[0.72rem]">{m.sub}</span>

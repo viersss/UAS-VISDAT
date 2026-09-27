@@ -150,6 +150,17 @@ body {
   }
 }
 
+@keyframes waveTextEntrance {
+  0% { transform: translateY(12px); opacity: 0; }
+  40% { transform: translateY(-3px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.animate-wave-text {
+  display: inline-block;
+  opacity: 0;
+  animation: waveTextEntrance 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
 .reveal-up {
   animation: revealUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

@@ -10,6 +10,8 @@ import ProvinceSelector from '@/components/ProvinceSelector';
 import InsightPanel from '@/components/InsightPanel';
 import ChartCaption from '@/components/ChartCaption';
 import TabSwitcher from '@/components/TabSwitcher';
+import AnimatedNumber from '@/components/AnimatedNumber';
+import WaveText from '@/components/WaveText';
 
 import PCAScatter from '@/components/charts/PCAScatter';
 import ParallelCoordinates from '@/components/charts/ParallelCoordinates';
@@ -230,17 +232,17 @@ export default function App() {
   const chapterOneHighlights = [
     {
       label: 'IPM tertinggi',
-      value: `${topIPM.provinsi} · ${topIPM.ipm.toFixed(1)}`,
+      value: <>{topIPM.provinsi} &middot; <AnimatedNumber value={topIPM.ipm.toFixed(1)} /></>,
       note: 'Provinsi dengan kualitas hidup paling tinggi',
     },
     {
       label: 'IPM terendah',
-      value: `${bottomIPM.provinsi} · ${bottomIPM.ipm.toFixed(1)}`,
+      value: <>{bottomIPM.provinsi} &middot; <AnimatedNumber value={bottomIPM.ipm.toFixed(1)} /></>,
       note: 'Batas bawah pembangunan manusia nasional',
     },
     {
       label: 'Korelasi paling kuat',
-      value: `r = ${corrIPMKemiskinan.toFixed(2)}`,
+      value: <>r = <AnimatedNumber value={corrIPMKemiskinan.toFixed(2)} /></>,
       note: 'IPM dan kemiskinan bergerak berlawanan arah',
     },
   ];
@@ -248,12 +250,12 @@ export default function App() {
   const chapterTwoHighlights = [
     {
       label: 'Wilayah teratas',
-      value: `${spatialByPulau[0]?.pulau ?? '—'} · ${spatialByPulau[0]?.avgIPM.toFixed(1) ?? '0.0'}`,
+      value: <>{spatialByPulau[0]?.pulau ?? '—'} &middot; <AnimatedNumber value={spatialByPulau[0]?.avgIPM.toFixed(1) ?? '0.0'} /></>,
       note: 'Rata-rata IPM tertinggi di pulau tersebut',
     },
     {
       label: 'Kesenjangan spatial',
-      value: `${Math.max(...spatialByPulau.map(d => d.avgIPM)).toFixed(1)} – ${Math.min(...spatialByPulau.map(d => d.avgIPM)).toFixed(1)}`,
+      value: <><AnimatedNumber value={Math.max(...spatialByPulau.map(d => d.avgIPM)).toFixed(1)} /> &ndash; <AnimatedNumber value={Math.min(...spatialByPulau.map(d => d.avgIPM)).toFixed(1)} /></>,
       note: 'Jarak rata-rata IPM antar pulau',
     },
     {
@@ -267,12 +269,12 @@ export default function App() {
     {
       label: 'Sektor terbesar',
       value: `${sectorTotals[0].sektor}`,
-      note: `${((sectorTotals[0].nilai / totalPDB) * 100).toFixed(1)}% dari total PDB`,
+      note: <><AnimatedNumber value={((sectorTotals[0].nilai / totalPDB) * 100).toFixed(1)} />% dari total PDB</>,
     },
     {
       label: 'Sektor kedua',
       value: `${sectorTotals[1].sektor}`,
-      note: `${((sectorTotals[1].nilai / totalPDB) * 100).toFixed(1)}% dari total PDB`,
+      note: <><AnimatedNumber value={((sectorTotals[1].nilai / totalPDB) * 100).toFixed(1)} />% dari total PDB</>,
     },
     {
       label: 'Pola ekonomi',
@@ -287,7 +289,7 @@ export default function App() {
 
       <Hero
         eyebrow=""
-        title={<>Ketimpangan Pembangunan Indonesia</>}
+        title={<WaveText text="Ketimpangan Pembangunan Indonesia" />}
         subtitle={
           <>
               Dari Aceh hingga Papua, pembangunan Indonesia menunjukkan capaian yang berbeda antarwilayah. Di balik rata-rata nasional, terdapat daerah yang berkembang lebih cepat, tertinggal, serta sektor ekonomi dengan kontribusi nilai tambah yang berbeda.
@@ -681,7 +683,7 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
                             style={{
                               opacity: sectorChartVisible ? 1 : 0,
                               transform: sectorChartVisible ? 'translateX(0)' : 'translateX(8px)',
-                              transitionDelay: `${i * 110 + 120}ms`,
+                              transitionDelay: `${i * 180 + 550}ms`,
                             }}
                           >
                             {pct.toFixed(1)}%
@@ -694,7 +696,7 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
                             style={{
                               width,
                               backgroundColor: barColor,
-                              transitionDelay: `${i * 110}ms`,
+                              transitionDelay: `${i * 180 + 500}ms`,
                               boxShadow: sectorChartVisible ? '0 8px 16px rgba(29, 109, 123, 0.14)' : 'none',
                             }}
                             title={`${s.sektor}: ${pct.toFixed(1)}%`}
@@ -779,37 +781,37 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
         </div>
 
         <div className="max-w-5xl mx-auto px-6 sm:px-8 pb-20">
-          <div className="mb-8 text-center">
+          <div className="mb-14 text-center">
             <h3 className="mt-3 text-3xl font-bold tracking-[-0.04em] text-ink sm:text-4xl">
               3 insight yang paling menentukan
             </h3>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-3">
-            <article className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+          <div className="grid gap-8 lg:gap-6 lg:grid-cols-3">
+            <article className="rounded-2xl border border-line bg-white p-6 shadow-sm">
               <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Insight 01</div>
               <h4 className="text-xl font-bold text-ink">IPM dan kemiskinan bergerak seiring.</h4>
-              <p className="mt-2 text-sm leading-7 text-ink-soft">
+              <p className="mt-3 text-sm leading-7 text-ink-soft">
                 Kualitas hidup tidak naik secara merata ketika kemiskinan tetap tinggi. Korelasi yang kuat menunjukkan
                 bahwa kesejahteraan tidak hanya ditentukan oleh pendapatan semata, tetapi juga oleh kapasitas wilayah
                 dalam menurunkan pengeluaran dan memperluas akses terhadap kebutuhan dasar.
               </p>
             </article>
 
-            <article className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+            <article className="rounded-2xl border border-line bg-white p-6 shadow-sm">
               <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Insight 02</div>
               <h4 className="text-xl font-bold text-ink">Listrik adalah pengungkit kesejahteraan.</h4>
-              <p className="mt-2 text-sm leading-7 text-ink-soft">
+              <p className="mt-3 text-sm leading-7 text-ink-soft">
                 Akses dasar seperti listrik menjadi fondasi penting bagi pendidikan, kesehatan, dan produktivitas rumah
                 tangga. Artinya, infrastruktur dasar bukan pelengkap teknis, melainkan prasyarat agar manfaat
                 pembangunan benar-benar menjangkau masyarakat.
               </p>
             </article>
 
-            <article className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+            <article className="rounded-2xl border border-line bg-white p-6 shadow-sm">
               <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Insight 03</div>
               <h4 className="text-xl font-bold text-ink">Ekonomi nasional masih sangat terkonsentrasi.</h4>
-              <p className="mt-2 text-sm leading-7 text-ink-soft">
+              <p className="mt-3 text-sm leading-7 text-ink-soft">
                 Nilai tambah ekonomi belum terdistribusi secara merata. Sektor bernilai tinggi mendominasi struktur PDB,
                 sehingga pertumbuhan agregat bisa terlihat kuat, tetapi dampaknya terhadap kesejahteraan masyarakat luas
                 masih terbatas dan belum sepenuhnya merata di wilayah yang tertinggal.
@@ -817,7 +819,7 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
             </article>
           </div>
 
-          <div className="mt-28 mb-16">
+          <div className="mt-36 mb-20">
             <blockquote className="relative mx-auto max-w-4xl pl-0 text-justify text-[1.08rem] font-medium italic leading-[1.9] text-ink sm:text-[1.5rem]">
               <span className="absolute -left-1 -top-8 text-[3.5rem] font-bold leading-none text-ink/10">“</span>
               Peningkatan kesejahteraan tidak cukup hanya dijalankan melalui pertumbuhan agregat. Untuk benar-benar
@@ -827,7 +829,7 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
             </blockquote>
           </div>
 
-          <div className="mt-8 pb-8">
+          <div className="mt-20 sm:mt-24 pb-16">
             <div className="mx-auto flex max-w-[300px] items-center justify-center gap-3">
               <span className="h-px flex-1 bg-gradient-to-r from-transparent via-ink/20 to-transparent" />
               <div className="inline-flex items-center rounded-full border border-line bg-white/90 px-4 py-2 shadow-[0_10px_30px_rgba(21,50,37,0.06)] backdrop-blur-sm">

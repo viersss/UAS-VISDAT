@@ -26,7 +26,7 @@ from sklearn.preprocessing import StandardScaler
 # KONFIGURASI HALAMAN & CSS
 # ===========================================================================
 st.set_page_config(
-    page_title="Ketimpangan Pembangunan Indonesia — Data Storytelling",
+    page_title="Ketimpangan Pembangunan Indonesia",
     page_icon="\U0001F4CA",
     layout="wide",
     initial_sidebar_state="expanded",
