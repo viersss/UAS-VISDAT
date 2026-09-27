@@ -188,7 +188,7 @@ export default function Sunburst({ data, width = 720, height = 560 }: Props) {
   }, [chartSize.height, chartSize.width, data]);
 
   return (
-    <div ref={wrapRef} className="relative w-full">
+    <div ref={wrapRef} className="relative w-full overflow-visible">
       <svg ref={ref} width={chartSize.width} height={chartSize.height} viewBox={`0 0 ${chartSize.width} ${chartSize.height}`} className="d3-chart block w-full h-auto" preserveAspectRatio="xMidYMid meet" />
       {hovered && (
         <div className="map-tooltip visible" style={{ left: hovered.x, top: hovered.y }}>

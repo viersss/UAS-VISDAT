@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 
 import Hero from '@/components/Hero';
@@ -55,6 +55,8 @@ export default function App() {
   const [hierarchyTab, setHierarchyTab] = useState('treemap');
   const [focusPair, setFocusPair] = useState<[string, string]>(['ipm', 'kemiskinan']);
   const [geo, setGeo] = useState<GeoCollection | null>(null);
+  const [sectorChartVisible, setSectorChartVisible] = useState(false);
+  const sectorChartRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetch('/indonesia-provinces.json')
@@ -82,6 +84,32 @@ export default function App() {
     revealNodes.forEach(node => observer.observe(node));
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    const node = sectorChartRef.current;
+    if (!node || sectorChartVisible) return;
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      setSectorChartVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            setSectorChartVisible(true);
+            observer.disconnect();
+          }
+        });
+      },
+      { threshold: 0.18 }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [sectorChartVisible]);
 
   useEffect(() => {
     const parallaxNodes = document.querySelectorAll<HTMLElement>('[data-parallax]');
@@ -518,6 +546,13 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
 
           <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-6 lg:items-stretch">
             <div className="lg:col-span-1 flex h-full flex-col gap-4">
+              <ProvinceSelector
+                provinces={ALL_PROVINCES}
+                selected={highlighted}
+                onToggle={toggleProvince}
+                onClear={() => setHighlighted(new Set())}
+              />
+
               <div className="bg-white border border-line rounded-xl p-4 shadow-sm">
                 <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted block mb-3">
                   Indikator peta
@@ -531,31 +566,6 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
                     <option key={m.key} value={m.key}>{m.label}</option>
                   ))}
                 </select>
-              </div>
-
-              <div className="flex-1 bg-white border border-line rounded-xl p-4 shadow-sm">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-muted mb-3">
-                  Perbandingan antar pulau
-                </h4>
-                <div className="space-y-3">
-                  {spatialByPulau.map(g => {
-                    const maxIPM = spatialByPulau[0].avgIPM;
-                    return (
-                      <div key={g.pulau}>
-                        <div className="flex items-center justify-between text-[11px] mb-1.5">
-                          <span className="text-ink-soft truncate">{g.pulau}</span>
-                          <span className="font-semibold text-ink">{g.avgIPM.toFixed(1)}</span>
-                        </div>
-                        <div className="h-1.5 bg-line-soft rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-accent rounded-full transition-all duration-500"
-                            style={{ width: `${(g.avgIPM / maxIPM) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
             </div>
 
@@ -626,7 +636,7 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
             </>
           }
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-14 lg:mb-20">
             {chapterThreeHighlights.map(item => (
               <div key={item.label} className="story-stat-card">
                 <div className="story-stat-label">{item.label}</div>
@@ -636,44 +646,69 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
             ))}
           </div>
 
-          <div className="mb-8">
-            <h3 className="text-sm font-semibold text-ink mb-3">Kontribusi 9 sektor terhadap PDB</h3>
-            <div className="flex h-8 rounded-lg overflow-hidden border border-line">
-              {sectorTotals.map((s, i) => {
-                const colors = ['#5b9a6a','#8b6b3e','#1a7f8a','#e8a838','#9b6fa8','#3b82f6','#d97742','#ec5f5f','#6b7f94'];
-                const pct = (s.nilai / totalPDB) * 100;
-                return (
-                  <div
-                    key={s.sektor}
-                    className="flex items-center justify-center text-[0.6rem] font-semibold text-white transition-all duration-300 hover:brightness-110"
-                    style={{
-                      width: `${pct}%`,
-                      backgroundColor: colors[i % colors.length],
-                      minWidth: pct > 5 ? 'auto' : '2px',
-                    }}
-                    title={`${s.sektor}: ${pct.toFixed(1)}% (${s.nilai.toLocaleString('id-ID')} T)`}
-                  >
-                    {pct > 6 && `${pct.toFixed(1)}%`}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
-              {sectorTotals.map((s, i) => {
-                const colors = ['#5b9a6a','#8b6b3e','#1a7f8a','#e8a838','#9b6fa8','#3b82f6','#d97742','#ec5f5f','#6b7f94'];
-                const pct = (s.nilai / totalPDB) * 100;
-                return (
-                  <div key={s.sektor} className="flex items-center gap-1.5 text-xs text-ink-soft">
-                    <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: colors[i % colors.length] }} />
-                    <span className="truncate max-w-[180px]">{s.sektor}</span>
-                    <span className="font-semibold text-ink">{pct.toFixed(1)}%</span>
-                  </div>
-                );
-              })}
+          <div className="mb-28 lg:mb-32" ref={sectorChartRef}>
+            <div className="grid gap-8 lg:gap-10 lg:grid-cols-[0.7fr_1.3fr] lg:items-center">
+              <div className="rounded-2xl border border-line bg-canvas p-4 text-sm leading-6 text-ink-soft shadow-sm">
+                <p className="font-semibold uppercase tracking-[0.12em] text-[10px] text-ink-muted">Interpretasi</p>
+                <p className="mt-3 font-medium text-ink">Struktur ekonomi masih sangat terkonsentrasi.</p>
+                <p className="mt-2">
+                  Sektor <strong>{sectorTotals[0].sektor}</strong> menjadi penyumbang terbesar PDB, dengan kontribusi sekitar
+                  {((sectorTotals[0].nilai / totalPDB) * 100).toFixed(1)}% ({sectorTotals[0].nilai.toLocaleString('id-ID')} triliun rupiah),
+                  disusul oleh <strong>{sectorTotals[1].sektor}</strong> sebesar {((sectorTotals[1].nilai / totalPDB) * 100).toFixed(1)}%.
+                  Artinya, output ekonomi nasional masih sangat bergantung pada beberapa sektor inti, sehingga pertumbuhan belum
+                  serta merta mencerminkan pemerataan nilai tambah di seluruh kegiatan ekonomi.
+                </p>
+              </div>
+
+              <div className="rounded-2xl p-0">
+                <div className="mb-4 flex items-end justify-between gap-3">
+                  <h3 className="text-sm font-semibold text-ink">Kontribusi 9 sektor terhadap PDB</h3>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Persentase total</span>
+                </div>
+
+                <div className="space-y-4">
+                  {sectorTotals.map((s, i) => {
+                    const pct = (s.nilai / totalPDB) * 100;
+                    const width = sectorChartVisible ? `${pct}%` : '0%';
+                    const barColor = ['#1d6d7b', '#3d8c93', '#6b7f94', '#d98d55', '#7d8a63', '#4b7aa6', '#c66a5d', '#9a7ba1', '#4a6a5e'][i % 9];
+
+                    return (
+                      <div key={s.sektor} className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-3 text-[11px] sm:text-[12px]">
+                          <span className="min-w-0 flex-1 truncate pr-4 text-ink-soft">{s.sektor}</span>
+                          <span
+                            className="font-semibold text-ink transition-all duration-500"
+                            style={{
+                              opacity: sectorChartVisible ? 1 : 0,
+                              transform: sectorChartVisible ? 'translateX(0)' : 'translateX(8px)',
+                              transitionDelay: `${i * 110 + 120}ms`,
+                            }}
+                          >
+                            {pct.toFixed(1)}%
+                          </span>
+                        </div>
+
+                        <div className="h-3 overflow-hidden rounded-full bg-line-soft">
+                          <div
+                            className="h-full rounded-full transition-all duration-700 ease-out"
+                            style={{
+                              width,
+                              backgroundColor: barColor,
+                              transitionDelay: `${i * 110}ms`,
+                              boxShadow: sectorChartVisible ? '0 8px 16px rgba(29, 109, 123, 0.14)' : 'none',
+                            }}
+                            title={`${s.sektor}: ${pct.toFixed(1)}%`}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+          <div className="mt-28 mb-4 flex items-center justify-between gap-3 flex-wrap">
             <h3 className="text-base font-semibold text-ink">
               {hierarchyTab === 'treemap' ? 'Treemap "Proporsi Nilai Ekonomi"' : 'Sunburst "Struktur Radial"'}
             </h3>
@@ -687,46 +722,61 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
             />
           </div>
 
-          <div className="bg-white border border-line rounded-xl p-4 sm:p-6 overflow-hidden">
+          <div className="mb-12 lg:mb-16">
             {hierarchyTab === 'treemap' && (
-              <>
-                <Treemap data={HIERARCHY_DATA} width={1160} height={600} />
-                <ChartCaption>
-                  Simbol ukuran menunjukkan nilai ekonomi pada tiap blok, sementara warna membedakan sektor. Semakin gelap
-                  atau lebih dominan, semakin besar kontribusinya terhadap total PDB.
-                </ChartCaption>
-              </>
+              <div className="grid gap-4 lg:gap-5 lg:grid-cols-[1.35fr_0.65fr] lg:items-center">
+                <div className="min-w-0 overflow-visible rounded-2xl p-0">
+                  <Treemap data={HIERARCHY_DATA} width={920} height={560} />
+                </div>
+                <div className="rounded-2xl border border-line bg-canvas p-4 text-sm leading-6 text-ink-soft shadow-sm">
+                  <p className="font-semibold uppercase tracking-[0.12em] text-[10px] text-ink-muted">Interpretasi</p>
+                  <p className="mt-3 font-medium text-ink">Insight struktur ekonomi</p>
+                  <p className="mt-2">
+                    Blok yang lebih besar menunjukkan kontribusi nilai tambah yang lebih tinggi. Warna yang konsisten membantu
+                    membedakan sektor utama dan memberi gambaran seberapa terkonsentrasinya struktur ekonomi nasional.
+                  </p>
+                  <p className="mt-3">
+                    Sektor <strong>{sectorTotals[0].sektor}</strong> menjadi penyumbang terbesar PDB, dengan kontribusi sekitar
+                    {((sectorTotals[0].nilai / totalPDB) * 100).toFixed(1)}% ({sectorTotals[0].nilai.toLocaleString('id-ID')} triliun rupiah),
+                    disusul oleh <strong>{sectorTotals[1].sektor}</strong> sebesar {((sectorTotals[1].nilai / totalPDB) * 100).toFixed(1)}%.
+                    Besarnya kontribusi kedua sektor ini menunjukkan bahwa struktur ekonomi nasional masih cukup terkonsentrasi pada
+                    sektor tertentu.
+                  </p>
+                </div>
+              </div>
             )}
             {hierarchyTab === 'sunburst' && (
-              <>
-                <Sunburst data={HIERARCHY_DATA} width={780} height={600} />
-                <ChartCaption>
-                  Ring terdalam mewakili sektor, ring tengah subsektor, dan ring terluar rincian aktivitas. Skema warna
-                  tetap konsisten untuk memudahkan pembacaan antar tingkat.
-                </ChartCaption>
-              </>
+              <div className="grid gap-4 lg:gap-5 lg:grid-cols-[1.25fr_0.75fr] lg:items-center">
+                <div className="min-w-0 overflow-visible rounded-2xl p-0">
+                  <Sunburst data={HIERARCHY_DATA} width={760} height={560} />
+                </div>
+                <div className="rounded-2xl border border-line bg-canvas p-4 text-sm leading-6 text-ink-soft shadow-sm">
+                  <p className="font-semibold uppercase tracking-[0.12em] text-[10px] text-ink-muted">Interpretasi</p>
+                  <p className="mt-3 font-medium text-ink">Insight struktur ekonomi</p>
+                  <p className="mt-2">
+                    Ring terdalam mewakili sektor, ring tengah subsektor, dan ring terluar rincian aktivitas. Pola ini membantu
+                    melihat bagaimana nilai tambah bergantung pada kumpulan aktivitas yang membentuk sektor utama.
+                  </p>
+                  <p className="mt-3">
+                    Sektor <strong>{sectorTotals[0].sektor}</strong> menjadi penyumbang terbesar PDB, dengan kontribusi sekitar
+                    {((sectorTotals[0].nilai / totalPDB) * 100).toFixed(1)}% ({sectorTotals[0].nilai.toLocaleString('id-ID')} triliun rupiah),
+                    disusul oleh <strong>{sectorTotals[1].sektor}</strong> sebesar {((sectorTotals[1].nilai / totalPDB) * 100).toFixed(1)}%.
+                    Sementara itu, kontribusi sektor lainnya masih lebih kecil, sehingga pertumbuhan ekonomi belum tentu mencerminkan
+                    pemerataan nilai tambah di seluruh kegiatan ekonomi.
+                  </p>
+                </div>
+              </div>
             )}
-          </div>
-
-          <div className="mt-6">
-            <InsightPanel title="Insight struktur ekonomi">
-              <p>
-                Sektor <strong>{sectorTotals[0].sektor}</strong> menjadi penyumbang terbesar PDB, dengan kontribusi sekitar
-                {((sectorTotals[0].nilai / totalPDB) * 100).toFixed(1)}% ({sectorTotals[0].nilai.toLocaleString('id-ID')} triliun rupiah),
-                disusul oleh <strong>{sectorTotals[1].sektor}</strong> sebesar {((sectorTotals[1].nilai / totalPDB) * 100).toFixed(1)}%.
-                Besarnya kontribusi kedua sektor ini menunjukkan bahwa struktur ekonomi nasional masih cukup terkonsentrasi pada
-                sektor tertentu. Sementara itu, kontribusi sektor lainnya masih lebih kecil, sehingga pertumbuhan ekonomi belum
-                tentu mencerminkan pemerataan nilai tambah di seluruh kegiatan ekonomi.
-              </p>
-            </InsightPanel>
           </div>
         </ChapterSection>
       </div>
 
       <div id="epilog" className="scroll-mt-16">
-        <TransitionQuote
-          quote="Ketimpangan bukan sekadar angka. Di dalamnya terdapat perbedaan akses, peluang, dan kesempatan untuk membangun masa futur."
-        />
+        <div className="mb-14 lg:mb-20">
+          <TransitionQuote
+            quote="Ketimpangan bukan sekadar angka. Di dalamnya terdapat perbedaan akses, peluang, dan kesempatan untuk membangun masa futur."
+          />
+        </div>
 
         <div className="max-w-5xl mx-auto px-6 sm:px-8 pb-20">
           <div className="mb-8 text-center">
@@ -735,7 +785,7 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
             </h3>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-3">
             <article className="rounded-2xl border border-line bg-white p-5 shadow-sm">
               <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Insight 01</div>
               <h4 className="text-xl font-bold text-ink">IPM dan kemiskinan bergerak seiring.</h4>
@@ -767,7 +817,7 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
             </article>
           </div>
 
-          <div className="mt-28">
+          <div className="mt-28 mb-16">
             <blockquote className="relative mx-auto max-w-4xl pl-0 text-justify text-[1.08rem] font-medium italic leading-[1.9] text-ink sm:text-[1.5rem]">
               <span className="absolute -left-1 -top-8 text-[3.5rem] font-bold leading-none text-ink/10">“</span>
               Peningkatan kesejahteraan tidak cukup hanya dijalankan melalui pertumbuhan agregat. Untuk benar-benar
@@ -777,7 +827,7 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
             </blockquote>
           </div>
 
-          <div className="mt-12 pb-8">
+          <div className="mt-8 pb-8">
             <div className="mx-auto flex max-w-[300px] items-center justify-center gap-3">
               <span className="h-px flex-1 bg-gradient-to-r from-transparent via-ink/20 to-transparent" />
               <div className="inline-flex items-center rounded-full border border-line bg-white/90 px-4 py-2 shadow-[0_10px_30px_rgba(21,50,37,0.06)] backdrop-blur-sm">
