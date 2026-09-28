@@ -37,7 +37,7 @@ export default function PCAScatter({ points, summary, width = 760, height = 520 
     const svg = d3.select(ref.current);
     svg.selectAll('*').remove();
 
-    const margin = { top: 40, right: 240, bottom: 60, left: 68 };
+    const margin = { top: 40, right: 216, bottom: 60, left: 68 };
     const innerW = width - margin.left - margin.right;
     const innerH = height - margin.top - margin.bottom;
 
@@ -197,52 +197,157 @@ export default function PCAScatter({ points, summary, width = 760, height = 520 
       .style('pointer-events', 'none')
       .text(d => d.provinsi);
 
+    // Define drop shadow filter in svg defs
+    const defs = svg.select('defs').empty() ? svg.append('defs') : svg.select('defs');
+    if (defs.select('#pca-legend-shadow').empty()) {
+      const filter = defs.append('filter')
+        .attr('id', 'pca-legend-shadow')
+        .attr('x', '-10%').attr('y', '-10%')
+        .attr('width', '130%').attr('height', '130%');
+      filter.append('feDropShadow')
+        .attr('dx', '0')
+        .attr('dy', '3')
+        .attr('stdDeviation', '5')
+        .attr('flood-color', '#0f172a')
+        .attr('flood-opacity', '0.06');
+    }
+
     // Legend panel
+    const legendW = 180;
+    const itemH = 26;
+    const headerH = 34;
+    const pulauList = Object.keys(PULAU_COLORS);
+    const legendH = headerH + pulauList.length * itemH + 8;
+    const legendX = width - legendW - 14;
+
+    const pulauCounts = points.reduce((acc, p) => {
+      acc[p.pulau] = (acc[p.pulau] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
     const legend = svg.append('g')
-      .attr('transform', `translate(${width - margin.right + 22}, ${margin.top + 6})`);
+      .attr('class', 'chart-legend')
+      .attr('transform', `translate(${legendX}, ${margin.top + 6})`);
 
-    // Legend background
+    // Legend background card
     legend.append('rect')
-      .attr('width', 175).attr('height', 200)
-      .attr('rx', 8)
-      .attr('fill', 'white').attr('opacity', 0.85)
-      .attr('stroke', '#e2e8ed').attr('stroke-width', 0.8);
+      .attr('width', legendW)
+      .attr('height', legendH)
+      .attr('rx', 10)
+      .attr('fill', '#ffffff')
+      .attr('stroke', '#e2e8f0')
+      .attr('stroke-width', 1)
+      .style('filter', 'url(#pca-legend-shadow)');
 
+    // Header label
     legend.append('text')
-      .attr('x', 12).attr('y', 20)
+      .attr('x', 14)
+      .attr('y', 21)
+      .style('font-family', 'inherit')
       .style('font-size', '9.5px')
       .style('font-weight', '700')
       .style('text-transform', 'uppercase')
-      .style('letter-spacing', '0.1em')
-      .style('fill', '#6b8294')
+      .style('letter-spacing', '0.08em')
+      .style('fill', '#64748b')
       .text('Kelompok Pulau');
 
-    const pulauList = Object.keys(PULAU_COLORS);
-    pulauList.forEach((pulau, i) => {
-      const row = legend.append('g').attr('transform', `translate(12, ${i * 22 + 34})`);
-      row.append('circle').attr('r', 5.5).attr('fill', PULAU_COLORS[pulau]).attr('opacity', 0.85);
-      row.append('text').attr('x', 16).attr('y', 4.5)
-        .style('font-size', '11.5px').style('fill', '#3b5567').text(pulau);
-    });
+    // Header count badge
+    legend.append('text')
+      .attr('x', legendW - 14)
+      .attr('y', 21)
+      .attr('text-anchor', 'end')
+      .style('font-family', 'inherit')
+      .style('font-size', '9.5px')
+      .style('font-weight', '600')
+      .style('fill', '#94a3b8')
+      .text(`${points.length} Prov`);
 
-    // Variance bar
-    const varG = legend.append('g').attr('transform', `translate(12, ${pulauList.length * 22 + 44})`);
-    varG.append('text').attr('y', 0).style('font-size', '9px').style('fill', '#6b8294')
-      .style('text-transform', 'uppercase').style('letter-spacing', '0.08em').text('Total Variansi Dijelaskan');
-    varG.append('rect').attr('y', 6).attr('width', 150).attr('height', 6)
-      .attr('rx', 3).attr('fill', '#e2e8ed');
-    varG.append('rect').attr('y', 6)
-      .attr('width', 150 * summary.totalVariance / 100).attr('height', 6)
-      .attr('rx', 3).attr('fill', '#1a7f8a').attr('opacity', 0.8);
-    varG.append('text').attr('y', 22).style('font-size', '12px')
-      .style('font-weight', '700').style('fill', '#1a7f8a')
-      .text(`${summary.totalVariance.toFixed(1)}%`);
+    // Divider line
+    legend.append('line')
+      .attr('x1', 12)
+      .attr('x2', legendW - 12)
+      .attr('y1', 31)
+      .attr('y2', 31)
+      .attr('stroke', '#f1f5f9')
+      .attr('stroke-width', 1);
+
+    // Rows
+    pulauList.forEach((pulau, i) => {
+      const count = pulauCounts[pulau] || 0;
+      const rowY = headerH + i * itemH + 2;
+
+      const row = legend.append('g')
+        .attr('transform', `translate(8, ${rowY})`)
+        .style('cursor', 'pointer');
+
+      // Row hover target / background pill
+      const rowBg = row.append('rect')
+        .attr('width', legendW - 16)
+        .attr('height', itemH - 2)
+        .attr('rx', 6)
+        .attr('fill', 'transparent')
+        .style('transition', 'fill 0.15s ease');
+
+      // Island color dot (with subtle ring)
+      row.append('circle')
+        .attr('cx', 12)
+        .attr('cy', (itemH - 2) / 2)
+        .attr('r', 5)
+        .attr('fill', PULAU_COLORS[pulau])
+        .attr('stroke', '#ffffff')
+        .attr('stroke-width', 1.2);
+
+      // Island name
+      row.append('text')
+        .attr('x', 24)
+        .attr('y', (itemH - 2) / 2)
+        .attr('dominant-baseline', 'central')
+        .style('font-family', 'inherit')
+        .style('font-size', '11.5px')
+        .style('font-weight', '500')
+        .style('fill', '#334155')
+        .text(pulau);
+
+      // Count badge
+      row.append('text')
+        .attr('x', legendW - 24)
+        .attr('y', (itemH - 2) / 2)
+        .attr('text-anchor', 'end')
+        .attr('dominant-baseline', 'central')
+        .style('font-family', 'inherit')
+        .style('font-size', '10.5px')
+        .style('font-weight', '600')
+        .style('fill', '#94a3b8')
+        .text(count);
+
+      // Interactive hover
+      row
+        .on('mouseenter', () => {
+          rowBg.attr('fill', '#f1f5f9');
+          circles.transition().duration(120)
+            .attr('opacity', d => d.pulau === pulau ? 1 : 0.12)
+            .attr('r', d => d.pulau === pulau ? (d.highlighted ? 9 : 7) : (d.highlighted ? 6 : 4));
+        })
+        .on('mouseleave', () => {
+          rowBg.attr('fill', 'transparent');
+          circles.transition().duration(120)
+            .attr('opacity', d => hasHighlight ? (d.highlighted ? 0.95 : 0.2) : 0.78)
+            .attr('r', d => d.highlighted ? 8 : 5.5);
+        });
+    });
 
   }, [points, summary, width, height]);
 
   return (
-    <div className="relative">
-      <svg ref={ref} width={width} height={height} className="d3-chart w-full h-auto" style={{ maxWidth: width }} />
+    <div className="relative w-full">
+      <svg
+        ref={ref}
+        viewBox={`0 0 ${width} ${height}`}
+        width={width}
+        height={height}
+        className="d3-chart block w-full h-auto"
+        style={{ maxWidth: width, overflow: 'visible' }}
+      />
       {tooltip && (
         <div
           className="map-tooltip visible"

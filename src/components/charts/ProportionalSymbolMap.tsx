@@ -146,9 +146,15 @@ export default function ProportionalSymbolMap({ geo, data, metric, metricLabel, 
         });
     });
 
-    // Legend
-    const legendX = width - 224;
-    const legendY = height - 58;
+    // Color legend card
+    const cardW = 230;
+    const cardH = 64;
+    const legendX = width - cardW - 16;
+    const legendY = height - cardH - 16;
+    const barW = cardW - 24;
+    const barH = 8;
+    const barX = legendX + 12;
+    const barY = legendY + 28;
 
     const gradId = 'ps-grad';
     const grad = defs.append('linearGradient').attr('id', gradId).attr('x1', '0%').attr('x2', '100%');
@@ -161,38 +167,48 @@ export default function ProportionalSymbolMap({ geo, data, metric, metricLabel, 
 
     // Legend background panel
     svg.append('rect')
-      .attr('x', legendX - 10).attr('y', legendY - 26)
-      .attr('width', 214).attr('height', 58)
-      .attr('rx', 6)
-      .attr('fill', 'white').attr('opacity', 0.85)
-      .attr('stroke', '#e2e8ed').attr('stroke-width', 0.5);
+      .attr('x', legendX).attr('y', legendY)
+      .attr('width', cardW).attr('height', cardH)
+      .attr('rx', 8)
+      .attr('fill', '#ffffff').attr('opacity', 0.95)
+      .attr('stroke', '#e2e8f0').attr('stroke-width', 1);
 
-    svg.append('rect').attr('x', legendX).attr('y', legendY)
-      .attr('width', 190).attr('height', 10)
-      .attr('rx', 3)
+    // Metric title
+    svg.append('text').attr('x', barX).attr('y', legendY + 18)
+      .style('font-family', 'inherit')
+      .style('font-size', '10px').style('fill', '#475569')
+      .style('font-weight', '700')
+      .style('text-transform', 'uppercase').style('letter-spacing', '0.04em').text(metricLabel);
+
+    // Color gradient bar
+    svg.append('rect').attr('x', barX).attr('y', barY)
+      .attr('width', barW).attr('height', barH)
+      .attr('rx', 4)
       .attr('fill', `url(#${gradId})`);
 
-    svg.append('text').attr('x', legendX).attr('y', legendY - 12)
-      .style('font-size', '9.5px').style('fill', '#6b8294')
-      .style('font-weight', '700')
-      .style('text-transform', 'uppercase').style('letter-spacing', '0.07em').text(metricLabel);
+    // Min value
+    svg.append('text').attr('x', barX).attr('y', barY + barH + 13)
+      .style('font-family', 'inherit')
+      .style('font-size', '10px').style('fill', '#64748b')
+      .style('font-weight', '600').text(extent[0]!.toFixed(1));
 
-    svg.append('text').attr('x', legendX).attr('y', legendY + 24)
-      .style('font-size', '10px').style('fill', '#6b8294').text(extent[0]!.toFixed(1));
-
-    svg.append('text').attr('x', legendX + 190).attr('y', legendY + 24)
-      .attr('text-anchor', 'end').style('font-size', '10px').style('fill', '#6b8294').text(extent[1]!.toFixed(1));
+    // Max value
+    svg.append('text').attr('x', barX + barW).attr('y', barY + barH + 13)
+      .attr('text-anchor', 'end')
+      .style('font-family', 'inherit')
+      .style('font-size', '10px').style('fill', '#64748b')
+      .style('font-weight', '600').text(extent[1]!.toFixed(1));
 
     // Size legend bubbles (top, small)
     const sizeRef = [extent[0]!, (extent[0]! + extent[1]!) / 2, extent[1]!];
-    const sizeLegendX = 20;
+    const sizeLegendX = 16;
     const sizeLegendY = height - 40;
     svg.append('rect')
       .attr('x', sizeLegendX - 8).attr('y', sizeLegendY - 28)
       .attr('width', 110).attr('height', 36)
-      .attr('rx', 5)
-      .attr('fill', 'white').attr('opacity', 0.85)
-      .attr('stroke', '#e2e8ed').attr('stroke-width', 0.5);
+      .attr('rx', 6)
+      .attr('fill', '#ffffff').attr('opacity', 0.95)
+      .attr('stroke', '#e2e8f0').attr('stroke-width', 1);
 
     let bubbleX = sizeLegendX + 10;
     sizeRef.forEach((v, idx) => {
@@ -215,8 +231,15 @@ export default function ProportionalSymbolMap({ geo, data, metric, metricLabel, 
   }, [geo, data, metric, metricLabel, highlighted, width, height]);
 
   return (
-    <div className="relative">
-      <svg ref={ref} width={width} height={height} className="d3-chart w-full h-auto rounded-lg" style={{ maxWidth: width }} />
+    <div className="relative w-full">
+      <svg
+        ref={ref}
+        viewBox={`0 0 ${width} ${height}`}
+        width={width}
+        height={height}
+        className="d3-chart block w-full h-auto rounded-lg"
+        style={{ maxWidth: width, overflow: 'visible' }}
+      />
       {tooltip && (
         <div className="map-tooltip visible" style={{ left: tooltip.x, top: tooltip.y, minWidth: 168 }}>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 3 }}>{tooltip.name}</div>

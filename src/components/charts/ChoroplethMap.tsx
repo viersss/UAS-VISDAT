@@ -106,11 +106,16 @@ export default function ChoroplethMap({ geo, data, metric, metricLabel, highligh
       }
     });
 
-    // Color legend
-    const legendW = 200;
-    const legendH = 10;
-    const legendX = width - legendW - 22;
-    const legendY = height - 48;
+    // Color legend card
+    const cardW = 230;
+    const cardH = 64;
+    const cardX = width - cardW - 16;
+    const cardY = height - cardH - 16;
+
+    const barW = cardW - 24;
+    const barH = 8;
+    const barX = cardX + 12;
+    const barY = cardY + 28;
 
     const gradId = 'map-grad';
     const grad = defs.append('linearGradient')
@@ -126,41 +131,57 @@ export default function ChoroplethMap({ geo, data, metric, metricLabel, highligh
 
     // Legend background
     svg.append('rect')
-      .attr('x', legendX - 10).attr('y', legendY - 24)
-      .attr('width', legendW + 20).attr('height', 52)
-      .attr('rx', 6)
-      .attr('fill', 'white').attr('opacity', 0.85)
-      .attr('stroke', '#e2e8ed').attr('stroke-width', 0.5);
+      .attr('x', cardX).attr('y', cardY)
+      .attr('width', cardW).attr('height', cardH)
+      .attr('rx', 8)
+      .attr('fill', '#ffffff').attr('opacity', 0.95)
+      .attr('stroke', '#e2e8f0').attr('stroke-width', 1);
 
-    svg.append('rect')
-      .attr('x', legendX).attr('y', legendY)
-      .attr('width', legendW).attr('height', legendH)
-      .attr('rx', 3)
-      .attr('fill', `url(#${gradId})`);
-
+    // Metric title
     svg.append('text')
-      .attr('x', legendX).attr('y', legendY - 10)
-      .style('font-size', '9.5px').style('fill', '#6b8294')
+      .attr('x', barX).attr('y', cardY + 18)
+      .style('font-family', 'inherit')
+      .style('font-size', '10px').style('fill', '#475569')
       .style('font-weight', '700')
-      .style('text-transform', 'uppercase').style('letter-spacing', '0.07em')
+      .style('text-transform', 'uppercase').style('letter-spacing', '0.04em')
       .text(metricLabel);
 
+    // Color gradient bar
+    svg.append('rect')
+      .attr('x', barX).attr('y', barY)
+      .attr('width', barW).attr('height', barH)
+      .attr('rx', 4)
+      .attr('fill', `url(#${gradId})`);
+
+    // Min value
     svg.append('text')
-      .attr('x', legendX).attr('y', legendY + legendH + 14)
-      .style('font-size', '10px').style('fill', '#6b8294')
+      .attr('x', barX).attr('y', barY + barH + 13)
+      .style('font-family', 'inherit')
+      .style('font-size', '10px').style('fill', '#64748b')
+      .style('font-weight', '600')
       .text(extent[0]!.toFixed(1));
 
+    // Max value
     svg.append('text')
-      .attr('x', legendX + legendW).attr('y', legendY + legendH + 14)
+      .attr('x', barX + barW).attr('y', barY + barH + 13)
       .attr('text-anchor', 'end')
-      .style('font-size', '10px').style('fill', '#6b8294')
+      .style('font-family', 'inherit')
+      .style('font-size', '10px').style('fill', '#64748b')
+      .style('font-weight', '600')
       .text(extent[1]!.toFixed(1));
 
   }, [geo, data, metric, metricLabel, highlighted, width, height]);
 
   return (
-    <div className="relative">
-      <svg ref={ref} width={width} height={height} className="d3-chart w-full h-auto rounded-lg" style={{ maxWidth: width }} />
+    <div className="relative w-full">
+      <svg
+        ref={ref}
+        viewBox={`0 0 ${width} ${height}`}
+        width={width}
+        height={height}
+        className="d3-chart block w-full h-auto rounded-lg"
+        style={{ maxWidth: width, overflow: 'visible' }}
+      />
       {tooltip && (
         <div
           className="map-tooltip visible"

@@ -20,6 +20,18 @@ const SECTOR_COLORS: Record<string, string> = {
   'Jasa Lainnya': '#5a7389',
 };
 
+const SECTOR_LABELS_MAP: Record<string, string[]> = {
+  'Pertanian, Kehutanan & Perikanan': ['Pertanian &', 'Perikanan'],
+  'Pertambangan & Penggalian': ['Pertambangan', '& Penggalian'],
+  'Industri Pengolahan': ['Industri', 'Pengolahan'],
+  'Pengadaan Listrik & Gas': ['Listrik &', 'Gas'],
+  'Konstruksi': ['Konstruksi'],
+  'Perdagangan Besar & Eceran': ['Perdagangan', 'Besar/Eceran'],
+  'Transportasi & Pergudangan': ['Transportasi &', 'Pergudangan'],
+  'Jasa Penyediaan Akomodasi': ['Akomodasi &', 'Makan Minum'],
+  'Jasa Lainnya': ['Jasa', 'Lainnya'],
+};
+
 interface TreeNode {
   name: string;
   children?: TreeNode[];
@@ -116,9 +128,13 @@ export default function Sunburst({ data, width = 720, height = 560 }: Props) {
 
     const g = svg.append('g').attr('transform', `translate(${chartSize.width / 2},${chartSize.height / 2})`);
 
+    const slicesGroup = g.append('g').attr('class', 'slices-layer');
+    const labelsGroup = g.append('g').attr('class', 'labels-layer').style('pointer-events', 'none');
+    const centerGroup = g.append('g').attr('class', 'center-layer').style('pointer-events', 'none');
+
     const allNodes = hierarchy.descendants().filter(d => d.depth > 0);
 
-    const paths = g.selectAll('path')
+    const paths = slicesGroup.selectAll('path')
       .data(allNodes)
       .join('path')
       .attr('d', arcGen as unknown as (d: unknown) => string)
@@ -166,77 +182,80 @@ export default function Sunburst({ data, width = 720, height = 560 }: Props) {
 
     // Sector labels
     const sectorNodes = hierarchy.descendants().filter(d => d.depth === 1) as d3.HierarchyRectangularNode<TreeNode>[];
-    g.selectAll('.sector-label')
+    labelsGroup.selectAll('.sector-label')
       .data(sectorNodes)
       .join('text')
       .attr('class', 'sector-label')
-      .filter(d => (d.x1 - d.x0) * radius > 0.18)
+      .filter(d => (d.x1 - d.x0) > 0.06)
       .attr('transform', d => {
         const angle = (d.x0 + d.x1) / 2;
         const textRadius = (d.y0 + d.y1) / 2;
         const x = Math.cos(angle - Math.PI / 2) * textRadius;
         const y = Math.sin(angle - Math.PI / 2) * textRadius;
-        const rotate = (angle * 180 / Math.PI) - 90;
+        let rotate = (angle * 180 / Math.PI) - 90;
+        if (angle > Math.PI) {
+          rotate += 180;
+        }
         return `translate(${x},${y}) rotate(${rotate})`;
       })
       .attr('text-anchor', 'middle')
-      .attr('dy', '0.35em')
+      .style('font-family', 'inherit')
       .style('font-size', '8.5px')
       .style('font-weight', '700')
       .style('fill', '#ffffff')
-      .style('letter-spacing', '0.04em')
+      .style('letter-spacing', '0.02em')
       .style('paint-order', 'stroke')
-      .style('stroke', 'rgba(0,0,0,0.22)')
-      .style('stroke-width', '0.5px')
+      .style('stroke', 'rgba(0,0,0,0.45)')
+      .style('stroke-width', '2px')
       .style('pointer-events', 'none')
-      .text(d => {
-        const label = d.data.name.length > 18 ? d.data.name.slice(0, 16) + '…' : d.data.name;
-        return label;
+      .each(function (d) {
+        const textEl = d3.select(this);
+        const lines = SECTOR_LABELS_MAP[d.data.name] || [d.data.name];
+        if (lines.length === 1) {
+          textEl.append('tspan')
+            .attr('x', 0)
+            .attr('dy', '0.35em')
+            .text(lines[0]);
+        } else {
+          textEl.append('tspan')
+            .attr('x', 0)
+            .attr('dy', '-0.5em')
+            .text(lines[0]);
+          textEl.append('tspan')
+            .attr('x', 0)
+            .attr('dy', '1.15em')
+            .text(lines[1]);
+        }
       });
 
     // Center hole
-    g.append('circle')
+    centerGroup.append('circle')
       .attr('r', innerRadius - 6)
       .attr('fill', '#fff')
-      .attr('opacity', 0.9);
+      .attr('opacity', 0.95)
+      .attr('stroke', '#e2e8f0')
+      .attr('stroke-width', 1);
 
-    g.append('text')
+    centerGroup.append('text')
       .attr('text-anchor', 'middle')
       .attr('dy', '-0.15em')
+      .style('font-family', 'inherit')
       .style('font-size', '14px')
       .style('font-weight', '800')
       .style('fill', '#14283b')
       .text('PDB');
 
-    g.append('text')
+    centerGroup.append('text')
       .attr('text-anchor', 'middle')
       .attr('dy', '1.1em')
+      .style('font-family', 'inherit')
       .style('font-size', '8.5px')
       .style('fill', '#6b8294')
       .style('text-transform', 'uppercase')
       .style('letter-spacing', '0.1em')
       .text('Nasional');
 
-    // Color legend
-    const legendData = Object.entries(SECTOR_COLORS).slice(0, 6);
-    const legendG = svg.append('g').attr('transform', `translate(12, 12)`);
-    legendG.append('rect')
-      .attr('width', 200).attr('height', legendData.length * 18 + 14)
-      .attr('rx', 6).attr('fill', 'white').attr('opacity', 0.82)
-      .attr('stroke', '#e2e8ed').attr('stroke-width', 0.5);
 
-    legendG.append('text').attr('x', 10).attr('y', 14)
-      .style('font-size', '8.5px').style('font-weight', '700')
-      .style('text-transform', 'uppercase').style('letter-spacing', '0.08em')
-      .style('fill', '#6b8294').text('Sektor');
-
-    legendData.forEach(([name, color], i) => {
-      const row = legendG.append('g').attr('transform', `translate(10, ${i * 18 + 22})`);
-      row.append('circle').attr('r', 5).attr('cy', 0).attr('fill', color).attr('opacity', 0.85);
-      row.append('text').attr('x', 13).attr('y', 4)
-        .style('font-size', '9px').style('fill', '#3b5567')
-        .text(name.length > 26 ? name.slice(0, 24) + '…' : name);
-    });
 
   }, [chartSize.height, chartSize.width, data]);
 
