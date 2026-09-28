@@ -288,7 +288,6 @@ export default function App() {
       <ProgressBar items={NAV_ITEMS} />
 
       <Hero
-        eyebrow=""
         title={<WaveText text="Ketimpangan Pembangunan Indonesia" />}
         subtitle={
           <>
@@ -296,7 +295,7 @@ export default function App() {
           </>
         }
       >
-        <div className="mt-8 flex flex-wrap justify-center gap-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+        <div className="mt-8 flex flex-wrap justify-start gap-2 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
           <span className="story-tag">34 provinsi</span>
           <span className="story-tag">10 indikator</span>
           <span className="story-tag">3 dimensi ketimpangan</span>
