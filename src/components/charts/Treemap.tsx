@@ -27,6 +27,7 @@ interface TreeNode {
   kontribusi?: number;
   depth: number;
   sectorName: string;
+  subsectorName?: string;
 }
 
 interface TooltipData {
@@ -37,6 +38,7 @@ interface TooltipData {
   kontribusi: number;
   sector: string;
   subsektor?: string;
+  depth: number;
 }
 
 export default function Treemap({ data, width = 820, height = 560 }: Props) {
@@ -44,6 +46,7 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState<TooltipData | null>(null);
   const [chartSize, setChartSize] = useState({ width, height });
+  const [activePath, setActivePath] = useState<string[]>([]);
 
   useEffect(() => {
     const updateSize = () => {
@@ -67,14 +70,11 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
     const root: TreeNode = { name: 'PDB Nasional', depth: -1, sectorName: '' };
     const sectorMap = new Map<string, Map<string, HierarchyDatum[]>>();
 
-    // Build subsektor lookup for tooltip
-    const subsektorMap = new Map<string, string>(); // rincian → subsektor
     data.forEach(d => {
       if (!sectorMap.has(d.sektor)) sectorMap.set(d.sektor, new Map());
       const subMap = sectorMap.get(d.sektor)!;
       if (!subMap.has(d.subsektor)) subMap.set(d.subsektor, []);
       subMap.get(d.subsektor)!.push(d);
-      subsektorMap.set(d.rincian, d.subsektor);
     });
 
     sectorMap.forEach((subMap, sektor) => {
@@ -89,6 +89,7 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
             kontribusi: item.kontribusi,
             depth: 2,
             sectorName: sektor,
+            subsectorName: subsektor,
           });
         });
         sectorNode.children = sectorNode.children || [];
@@ -98,35 +99,76 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
       root.children.push(sectorNode);
     });
 
-    const hierarchy = d3.hierarchy(root)
+    let targetNodeObj = root;
+    for (const p of activePath) {
+      const child = targetNodeObj.children?.find(c => c.name === p);
+      if (child) targetNodeObj = child;
+    }
+
+    const hierarchy = d3.hierarchy(targetNodeObj)
       .sum(d => d.value || 0)
       .sort((a, b) => (b.value || 0) - (a.value || 0));
+
+    const hasChildrenWithChildren = hierarchy.children && hierarchy.children.some(c => c.children && c.children.length > 0);
 
     const treemap = d3.treemap<TreeNode>()
       .size([chartSize.width, chartSize.height])
       .paddingOuter(4)
-      .paddingTop(d => d.depth === 0 ? 28 : d.depth === 1 ? 18 : 0)
+      .paddingTop(d => (d.depth === hierarchy.depth && hasChildrenWithChildren) ? 24 : 0)
       .paddingInner(2)
       .round(true);
 
     const treeRoot = treemap(hierarchy);
     const g = svg.append('g');
-    const sectors = treeRoot.descendants().filter(d => d.depth === 1) as d3.HierarchyRectangularNode<TreeNode>[];
 
-    sectors.forEach(node => {
-      const sectorName = node.data.sectorName;
+    const groups = treeRoot.children?.filter(d => d.children) || [];
+    const leaves = treeRoot.leaves();
+
+    groups.forEach(node => {
+      const sectorName = node.data.sectorName || node.data.name;
       const color = SECTOR_COLORS[sectorName] || '#6b8294';
 
-      // Sector background
-      g.append('rect')
+      const rect = g.append('rect')
         .attr('x', node.x0).attr('y', node.y0)
         .attr('width', node.x1 - node.x0).attr('height', node.y1 - node.y0)
         .attr('fill', color).attr('opacity', 0.08)
         .attr('stroke', color).attr('stroke-width', 1.5)
-        .attr('rx', 5);
+        .attr('rx', 5)
+        .style('cursor', 'pointer');
 
-      // Sector label
-      const sLabel = sectorName.length > 22 ? sectorName.slice(0, 20) + '…' : sectorName;
+      rect
+        .on('click', () => setActivePath([...activePath, node.data.name]))
+        .on('mouseenter', function (event) {
+          d3.select(this).attr('opacity', 0.16);
+          const [x, y] = d3.pointer(event, wrapRef.current);
+          const depth = node.depth + activePath.length;
+          setHovered({
+            x: Math.min(x + 14, chartSize.width - 220),
+            y: Math.min(y + 14, chartSize.height - 120),
+            name: node.data.name,
+            nilai: node.value || 0,
+            kontribusi: d3.sum(node.leaves(), leaf => leaf.data.kontribusi || 0),
+            sector: node.data.sectorName || node.data.name,
+            subsektor: depth === 2 ? node.data.name : undefined,
+            depth,
+          });
+        })
+        .on('mousemove', event => {
+          const [x, y] = d3.pointer(event, wrapRef.current);
+          setHovered(prev => prev ? {
+            ...prev,
+            x: Math.min(x + 14, chartSize.width - 220),
+            y: Math.min(y + 14, chartSize.height - 120),
+          } : null);
+        })
+        .on('mouseleave', function () {
+          d3.select(this).attr('opacity', 0.08);
+          setHovered(null);
+        });
+
+      rect.append('title').text(`Klik untuk drill-down ke ${node.data.name}`);
+
+      const sLabel = node.data.name.length > 22 ? node.data.name.slice(0, 20) + '…' : node.data.name;
       if (node.x1 - node.x0 > 65 && node.y1 - node.y0 > 30) {
         g.append('text')
           .attr('x', node.x0 + 8).attr('y', node.y0 + 17)
@@ -136,86 +178,118 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
           .style('pointer-events', 'none')
           .text(sLabel);
       }
-
-      const leaves = node.descendants().filter(d => d.depth === 3) as d3.HierarchyRectangularNode<TreeNode>[];
-      leaves.forEach(leaf => {
-        const w = leaf.x1 - leaf.x0;
-        const h = leaf.y1 - leaf.y0;
-        if (w < 4 || h < 4) return;
-
-        const kontribusi = leaf.data.kontribusi || 0;
-        const intensity = d3.scaleLinear().domain([0, 3]).range([0.28, 0.88]).clamp(true);
-
-        const rect = g.append('rect')
-          .attr('x', leaf.x0 + 1).attr('y', leaf.y0 + 1)
-          .attr('width', Math.max(0, w - 2)).attr('height', Math.max(0, h - 2))
-          .attr('fill', color)
-          .attr('opacity', intensity(kontribusi))
-          .attr('rx', 3)
-          .style('cursor', 'pointer')
-          .style('transition', 'opacity 0.15s ease, transform 0.15s ease');
-
-        rect
-          .on('mouseenter', function (event) {
-            d3.select(this)
-              .attr('opacity', Math.min(1, intensity(kontribusi) + 0.2))
-              .attr('stroke', 'white')
-              .attr('stroke-width', 1.5);
-
-            const [x, y] = d3.pointer(event, svg.node());
-            const safeX = x + 14 + 210 > chartSize.width ? x - 224 : x + 14;
-            const safeY = y + 14 + 100 > chartSize.height ? y - 110 : y + 14;
-
-            setHovered({
-              x: safeX, y: safeY,
-              name: leaf.data.name,
-              nilai: leaf.data.value || 0,
-              kontribusi,
-              sector: sectorName,
-              subsektor: subsektorMap.get(leaf.data.name),
-            });
-          })
-          .on('mousemove', function (event) {
-            const [x, y] = d3.pointer(event, svg.node());
-            const safeX = x + 14 + 210 > chartSize.width ? x - 224 : x + 14;
-            const safeY = y + 14 + 100 > chartSize.height ? y - 110 : y + 14;
-            setHovered(prev => prev ? { ...prev, x: safeX, y: safeY } : null);
-          })
-          .on('mouseleave', function () {
-            d3.select(this)
-              .attr('opacity', intensity(kontribusi))
-              .attr('stroke', null);
-            setHovered(null);
-          });
-
-        if (w > 55 && h > 28) {
-          const labelText = leaf.data.name.length > 16 ? leaf.data.name.slice(0, 14) + '…' : leaf.data.name;
-          g.append('text')
-            .attr('x', leaf.x0 + 6).attr('y', leaf.y0 + h / 2 - (h > 36 ? 6 : 2))
-            .style('font-size', Math.max(8, Math.min(10, w / 7)) + 'px')
-            .style('font-weight', '700')
-            .style('fill', '#ffffff')
-            .style('paint-order', 'stroke')
-            .style('stroke', 'rgba(0,0,0,0.2)')
-            .style('stroke-width', '0.5px')
-            .style('pointer-events', 'none')
-            .text(labelText);
-
-          if (h > 36) {
-            g.append('text')
-              .attr('x', leaf.x0 + 6).attr('y', leaf.y0 + h / 2 + 10)
-              .style('font-size', Math.max(7.5, Math.min(9, w / 9)) + 'px')
-              .style('fill', 'rgba(255,255,255,0.88)')
-              .style('pointer-events', 'none')
-              .text(`${kontribusi.toFixed(1)}%`);
-          }
-        }
-      });
     });
-  }, [chartSize.height, chartSize.width, data]);
+
+    leaves.forEach(leaf => {
+      const w = leaf.x1 - leaf.x0;
+      const h = leaf.y1 - leaf.y0;
+      if (w < 4 || h < 4) return;
+
+      const sectorName = leaf.data.sectorName;
+      const color = SECTOR_COLORS[sectorName] || '#6b8294';
+      const kontribusi = leaf.data.kontribusi || 0;
+      const intensity = d3.scaleLinear().domain([0, 3]).range([0.28, 0.88]).clamp(true);
+
+      const rect = g.append('rect')
+        .attr('x', leaf.x0 + 1).attr('y', leaf.y0 + 1)
+        .attr('width', Math.max(0, w - 2)).attr('height', Math.max(0, h - 2))
+        .attr('fill', color)
+        .attr('opacity', intensity(kontribusi))
+        .attr('rx', 3)
+        .style('cursor', 'pointer')
+        .style('transition', 'opacity 0.15s ease, transform 0.15s ease');
+
+      rect
+        .on('mouseenter', function (event) {
+          d3.select(this)
+            .attr('opacity', Math.min(1, intensity(kontribusi) + 0.2))
+            .attr('stroke', 'white')
+            .attr('stroke-width', 1.5);
+
+          const [x, y] = d3.pointer(event, wrapRef.current);
+          const safeX = x + 14 + 210 > chartSize.width ? x - 224 : x + 14;
+          const safeY = y + 14 + 120 > chartSize.height ? y - 130 : y + 14;
+
+          setHovered({
+            x: safeX, y: safeY,
+            name: leaf.data.name,
+            nilai: leaf.data.value || 0,
+            kontribusi,
+            sector: sectorName,
+            subsektor: leaf.data.subsectorName,
+            depth: leaf.depth + activePath.length,
+          });
+        })
+        .on('mousemove', function (event) {
+          const [x, y] = d3.pointer(event, wrapRef.current);
+          const safeX = x + 14 + 210 > chartSize.width ? x - 224 : x + 14;
+          const safeY = y + 14 + 120 > chartSize.height ? y - 130 : y + 14;
+          setHovered(prev => prev ? { ...prev, x: safeX, y: safeY } : null);
+        })
+        .on('mouseleave', function () {
+          d3.select(this)
+            .attr('opacity', intensity(kontribusi))
+            .attr('stroke', null);
+          setHovered(null);
+        });
+
+      if (w > 55 && h > 28) {
+        const labelText = leaf.data.name.length > 16 ? leaf.data.name.slice(0, 14) + '…' : leaf.data.name;
+        g.append('text')
+          .attr('x', leaf.x0 + 6).attr('y', leaf.y0 + h / 2 - (h > 36 ? 6 : 2))
+          .style('font-size', Math.max(8, Math.min(10, w / 7)) + 'px')
+          .style('font-weight', '700')
+          .style('fill', '#ffffff')
+          .style('paint-order', 'stroke')
+          .style('stroke', 'rgba(0,0,0,0.2)')
+          .style('stroke-width', '0.5px')
+          .style('pointer-events', 'none')
+          .text(labelText);
+
+        if (h > 36) {
+          g.append('text')
+            .attr('x', leaf.x0 + 6).attr('y', leaf.y0 + h / 2 + 10)
+            .style('font-size', Math.max(7.5, Math.min(9, w / 9)) + 'px')
+            .style('fill', 'rgba(255,255,255,0.88)')
+            .style('pointer-events', 'none')
+            .text(`${kontribusi.toFixed(1)}%`);
+        }
+      }
+    });
+  }, [chartSize.height, chartSize.width, data, activePath]);
 
   return (
-    <div ref={wrapRef} className="relative w-full overflow-visible">
+    <div ref={wrapRef} className="relative w-full overflow-visible flex flex-col">
+      <div className="flex items-center gap-2 mb-2 px-3 py-1.5 bg-[#0f1923] rounded-lg border border-[#1f2d3d] text-sm text-slate-300 overflow-x-auto whitespace-nowrap hide-scrollbar shadow-sm">
+        <button
+          className="hover:text-white font-semibold transition-colors"
+          onClick={() => setActivePath([])}
+        >
+          PDB Nasional
+        </button>
+        {activePath.map((path, i) => (
+          <span key={path} className="flex items-center gap-2">
+            <span className="text-slate-500 font-bold">›</span>
+            <button
+              className="hover:text-white font-semibold transition-colors"
+              onClick={() => setActivePath(activePath.slice(0, i + 1))}
+            >
+              {path}
+            </button>
+          </span>
+        ))}
+        {activePath.length > 0 && (
+          <div className="ml-auto">
+            <button
+              onClick={() => setActivePath(activePath.slice(0, -1))}
+              className="text-xs px-2 py-0.5 bg-[#1f2d3d] hover:bg-[#2a3c50] text-slate-300 rounded transition-colors"
+            >
+              Zoom Out
+            </button>
+          </div>
+        )}
+      </div>
+
       <svg ref={ref} width={chartSize.width} height={chartSize.height} viewBox={`0 0 ${chartSize.width} ${chartSize.height}`} className="d3-chart block w-full h-auto rounded-lg" preserveAspectRatio="xMidYMid meet" />
       {hovered && (
         <div
@@ -231,6 +305,9 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
               Sub-sektor: {hovered.subsektor}
             </div>
           )}
+          <div style={{ color: '#a8b6c0', fontSize: 10, marginBottom: 4 }}>
+            Level: <span style={{ color: '#e8a838' }}>{hovered.depth === 1 ? 'Sektor' : hovered.depth === 2 ? 'Sub-sektor' : 'Rincian'}</span>
+          </div>
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: 5 }}>
             <div style={{ color: '#a8b6c0', fontSize: 11.5 }}>
               Nilai PDB: <span style={{ color: '#fff', fontWeight: 700 }}>{hovered.nilai.toLocaleString('id-ID')} T</span>

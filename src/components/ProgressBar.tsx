@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 interface NavItem {
   id: string;
@@ -12,6 +12,9 @@ interface ProgressBarProps {
 export default function ProgressBar({ items }: ProgressBarProps) {
   const [active, setActive] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  const navRef = useRef<HTMLElement | null>(null);
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -34,33 +37,50 @@ export default function ProgressBar({ items }: ProgressBarProps) {
     return () => window.removeEventListener('scroll', onScroll);
   }, [items]);
 
+  useLayoutEffect(() => {
+    const updateIndicator = () => {
+      const nav = navRef.current;
+      const button = buttonRefs.current[active];
+      if (!nav || !button) return;
+      setIndicator({ left: button.offsetLeft, width: button.offsetWidth });
+    };
+
+    updateIndicator();
+    const observer = new ResizeObserver(updateIndicator);
+    if (navRef.current) observer.observe(navRef.current);
+    return () => observer.disconnect();
+  }, [active, items.length]);
+
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 border-b border-emerald-200/80 bg-white/65 backdrop-blur-xl shadow-[0_8px_22px_rgba(16,84,67,0.08)]">
-      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-emerald-200/80">
-        <div
-          className="h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-400 transition-[width] duration-150 ease-out"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-      <div className="mx-auto flex h-14 max-w-[1360px] items-center justify-center px-6 sm:px-8">
-        <nav className="hidden items-center justify-center gap-2 sm:flex">
+    <div className="story-nav-shell fixed left-1/2 top-3 z-50 w-[calc(100%-1rem)] max-w-[980px] -translate-x-1/2 overflow-hidden rounded-full">
+      <div className="relative flex h-[54px] items-center justify-center px-1.5 sm:h-[58px] sm:px-2">
+        <nav ref={navRef} aria-label="Navigasi cerita" className="relative flex w-full items-center justify-center gap-0.5 overflow-x-auto">
+          <span
+            aria-hidden="true"
+            className="story-nav-indicator"
+            style={{ left: indicator.left, width: indicator.width }}
+          />
           {items.map((item, i) => (
             <button
               key={item.id}
+              ref={node => { buttonRefs.current[i] = node; }}
+              type="button"
+              aria-current={active === i ? 'location' : undefined}
               onClick={() => document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' })}
-              className={`nav-pill rounded-full border px-4 py-2 text-[11px] font-medium tracking-[0.02em] transition-all duration-200 ${
-                active === i
-                  ? 'border-emerald-300/80 bg-[linear-gradient(135deg,rgba(224,247,233,0.9),rgba(236,253,245,0.7))] text-emerald-900 shadow-[0_8px_22px_rgba(16,185,129,0.12)]'
-                  : 'border-emerald-100/80 bg-[rgba(255,255,255,0.28)] text-emerald-900/75 hover:bg-[rgba(255,255,255,0.42)] hover:text-emerald-900'
+              className={`story-nav-link relative z-10 shrink-0 rounded-full px-2.5 py-2 text-xs font-medium transition-colors sm:px-4 sm:text-[13px] ${
+                active === i ? 'text-ink' : 'text-ink-soft hover:text-ink'
               }`}
             >
               {item.label}
             </button>
           ))}
         </nav>
-        <div className="text-xs font-medium text-emerald-900/80 sm:hidden">
-          {active + 1} / {items.length}
-        </div>
+      </div>
+      <div className="story-nav-track absolute bottom-0 left-5 right-5 h-[2px] overflow-hidden rounded-full">
+        <div
+          className="story-nav-progress h-full rounded-full transition-[width] duration-500 ease-out"
+          style={{ width: `${progress}%` }}
+        />
       </div>
     </div>
   );

@@ -137,6 +137,54 @@ export default function PCAScatter({ points, summary, width = 760, height = 520 
       .attr('text-anchor', 'middle').attr('class', 'axis-label')
       .text(`Komponen Utama 2 — ${summary.pc2Variance.toFixed(1)}% variansi`);
 
+    const maxLoading = d3.max(summary.loadings, loading => Math.max(Math.abs(loading.pc1), Math.abs(loading.pc2))) || 1;
+    const loadingScale = Math.min(innerW, innerH) * 0.28 / maxLoading;
+    const loadingDefs = svg.select('defs').empty() ? svg.append('defs') : svg.select('defs');
+    loadingDefs.append('marker')
+      .attr('id', 'pca-loading-arrow')
+      .attr('viewBox', '0 -4 8 8')
+      .attr('refX', 7)
+      .attr('refY', 0)
+      .attr('markerWidth', 6)
+      .attr('markerHeight', 6)
+      .attr('orient', 'auto')
+      .append('path')
+      .attr('d', 'M0,-4L8,0L0,4')
+      .attr('fill', '#b55e2b');
+
+    const originX = xScale(0);
+    const originY = yScale(0);
+    const loadingGroup = g.append('g').attr('class', 'pca-loadings');
+    summary.loadings.forEach((loading, index) => {
+      const endX = originX + loading.pc1 * loadingScale;
+      const endY = originY - loading.pc2 * loadingScale;
+      const label = INDICATOR_LABELS[loading.variable] || loading.variable;
+      const labelOffset = index % 2 === 0 ? -5 : 11;
+
+      loadingGroup.append('line')
+        .attr('x1', originX).attr('y1', originY)
+        .attr('x2', endX).attr('y2', endY)
+        .attr('stroke', '#b55e2b')
+        .attr('stroke-width', 1.4)
+        .attr('opacity', 0.72)
+        .attr('marker-end', 'url(#pca-loading-arrow)')
+        .append('title')
+        .text(`${label}: loading PC1 ${loading.pc1.toFixed(2)}, PC2 ${loading.pc2.toFixed(2)}`);
+
+      loadingGroup.append('text')
+        .attr('x', endX + (loading.pc1 >= 0 ? 5 : -5))
+        .attr('y', endY + labelOffset)
+        .attr('text-anchor', loading.pc1 >= 0 ? 'start' : 'end')
+        .style('font-size', '8px')
+        .style('font-weight', '700')
+        .style('fill', '#8c4827')
+        .style('paint-order', 'stroke')
+        .style('stroke', '#f8fafc')
+        .style('stroke-width', '2.5px')
+        .style('pointer-events', 'none')
+        .text(label);
+    });
+
     // Points
     const hasHighlight = points.some(p => p.highlighted);
 
@@ -239,28 +287,6 @@ export default function PCAScatter({ points, summary, width = 760, height = 520 
       .attr('stroke-width', 1)
       .style('filter', 'url(#pca-legend-shadow)');
 
-    // Header label
-    legend.append('text')
-      .attr('x', 14)
-      .attr('y', 21)
-      .style('font-family', 'inherit')
-      .style('font-size', '9.5px')
-      .style('font-weight', '700')
-      .style('text-transform', 'uppercase')
-      .style('letter-spacing', '0.08em')
-      .style('fill', '#64748b')
-      .text('Kelompok Pulau');
-
-    // Header count badge
-    legend.append('text')
-      .attr('x', legendW - 14)
-      .attr('y', 21)
-      .attr('text-anchor', 'end')
-      .style('font-family', 'inherit')
-      .style('font-size', '9.5px')
-      .style('font-weight', '600')
-      .style('fill', '#94a3b8')
-      .text(`${points.length} Prov`);
 
     // Divider line
     legend.append('line')

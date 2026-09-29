@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { Suspense, lazy, useState, useMemo, useEffect, useRef } from 'react';
 import * as d3 from 'd3';
+import { ChevronDown } from 'lucide-react';
 
 import Hero from '@/components/Hero';
 import ProgressBar from '@/components/ProgressBar';
@@ -7,7 +8,6 @@ import ChapterSection from '@/components/ChapterSection';
 import TransitionQuote from '@/components/TransitionQuote';
 import MetricStrip from '@/components/MetricStrip';
 import ProvinceSelector from '@/components/ProvinceSelector';
-import InsightPanel from '@/components/InsightPanel';
 import ChartCaption from '@/components/ChartCaption';
 import TabSwitcher from '@/components/TabSwitcher';
 import AnimatedNumber from '@/components/AnimatedNumber';
@@ -16,55 +16,62 @@ import WaveText from '@/components/WaveText';
 import PCAScatter from '@/components/charts/PCAScatter';
 import ParallelCoordinates from '@/components/charts/ParallelCoordinates';
 import ScatterMatrix from '@/components/charts/ScatterMatrix';
-import ChoroplethMap from '@/components/charts/ChoroplethMap';
 import Treemap from '@/components/charts/Treemap';
 import Sunburst from '@/components/charts/Sunburst';
 
 import { PROVINCE_DATA, type ProvinceDatum } from '@/data/provinces';
 import { HIERARCHY_DATA } from '@/data/hierarchy';
-import { SPATIAL_DATA, SPATIAL_METRICS, type SpatialMetricKey } from '@/data/spatial';
+import type { MigrationDataset } from '@/data/migration';
 import { INDICATOR_KEYS, INDICATOR_LABELS, computePCA, pearson } from '@/lib/stats';
-import type { GeoCollection } from '@/lib/geo';
 
 const NAV_ITEMS = [
   { id: 'hero', label: 'Pembuka' },
   { id: 'bab-1', label: 'Multivariat' },
-  { id: 'bab-2', label: 'Spasial' },
+  { id: 'bab-2', label: 'Migrasi' },
   { id: 'bab-3', label: 'Ekonomi' },
   { id: 'epilog', label: 'Penutup' },
 ];
 
 const ALL_PROVINCES = PROVINCE_DATA.map(d => d.provinsi).sort((a, b) => a.localeCompare(b));
 const MATRIX_VARIABLES = [...INDICATOR_KEYS].slice(0, 5);
-
-const MAP_METRICS = [
-  { key: 'ipm', label: 'IPM' },
-  { key: 'kemiskinan', label: 'Penduduk Miskin (%)' },
-  { key: 'pdrbPerKapita', label: 'PDRB per Kapita (jt Rp)' },
-  { key: 'airBersih', label: 'Akses Air Bersih (%)' },
-  { key: 'sanitasi', label: 'Sanitasi Layak (%)' },
-  { key: 'elektrifikasi', label: 'Elektrifikasi (%)' },
-  { key: 'gini', label: 'Rasio Gini' },
-  { key: 'hls', label: 'Harapan Lama Sekolah' },
-  { key: 'rls', label: 'Rata-rata Lama Sekolah' },
-  { key: 'tpt', label: 'Pengangguran (%)' },
-] as const;
+const MigrationFlowCharts = lazy(() => import('@/components/charts/MigrationFlowCharts'));
 
 export default function App() {
   const [highlighted, setHighlighted] = useState<Set<string>>(new Set());
   const [pcaTab, setPcaTab] = useState('pca');
-  const [mapMetric, setMapMetric] = useState<string>('ipm');
   const [hierarchyTab, setHierarchyTab] = useState('treemap');
   const [focusPair, setFocusPair] = useState<[string, string]>(['ipm', 'kemiskinan']);
-  const [geo, setGeo] = useState<GeoCollection | null>(null);
+  const [migrationDataset, setMigrationDataset] = useState<MigrationDataset | null>(null);
+  const [migrationError, setMigrationError] = useState<string | null>(null);
+  const [migrationOrigin, setMigrationOrigin] = useState('all');
+  const [migrationDestination, setMigrationDestination] = useState('all');
+  const [migrationChartsVisible] = useState(true);
   const [sectorChartVisible, setSectorChartVisible] = useState(false);
+  const [sectorTooltip, setSectorTooltip] = useState<{
+    sektor: string;
+    nilai: number;
+    kontribusi: number;
+    x: number;
+    y: number;
+  } | null>(null);
   const sectorChartRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    fetch('/indonesia-provinces.json')
-      .then(r => r.json())
-      .then(d => setGeo(d as GeoCollection))
-      .catch(() => {});
+    let cancelled = false;
+    Promise.all([
+      fetch('/Data%20Migrasi%20Risen%20Antarprovinsi.xlsx').then(response => {
+        if (!response.ok) throw new Error(`Workbook tidak dapat dimuat (${response.status}).`);
+        return response.arrayBuffer();
+      }),
+      import('@/data/migration'),
+    ])
+      .then(([buffer, { parseMigrationWorkbook }]) => {
+        if (!cancelled) setMigrationDataset(parseMigrationWorkbook(buffer));
+      })
+      .catch(error => {
+        if (!cancelled) setMigrationError(error instanceof Error ? error.message : 'Workbook migrasi gagal dibaca.');
+      });
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -206,20 +213,6 @@ export default function App() {
     pearson(PROVINCE_DATA.map(d => d.ipm), PROVINCE_DATA.map(d => d.elektrifikasi)),
     []);
 
-  // Map metric info
-  const mapMetricInfo = MAP_METRICS.find(m => m.key === mapMetric)!;
-
-  // Spatial data grouped by pulau for narrative
-  const spatialByPulau = useMemo(() => {
-    const groups = d3.groups(SPATIAL_DATA, d => d.pulau);
-    return groups.map(([pulau, items]) => ({
-      pulau,
-      avgIPM: d3.mean(items, d => d.ipm) ?? 0,
-      avgKemiskinan: d3.mean(items, d => d.kemiskinan) ?? 0,
-      count: items.length,
-    })).sort((a, b) => b.avgIPM - a.avgIPM);
-  }, []);
-
   // Hierarchy top sectors
   const sectorTotals = useMemo(() => {
     const map = d3.rollup(HIERARCHY_DATA, v => d3.sum(v, d => d.nilai), d => d.sektor);
@@ -228,6 +221,57 @@ export default function App() {
       .sort((a, b) => b.nilai - a.nilai);
   }, []);
   const totalPDB = sectorTotals.reduce((s, d) => s + d.nilai, 0);
+
+  const updateSectorTooltip = (
+    clientX: number,
+    clientY: number,
+    sektor: string,
+    nilai: number,
+    kontribusi: number
+  ) => {
+    const bounds = sectorChartRef.current?.getBoundingClientRect();
+    if (!bounds) return;
+    const tooltipWidth = 250;
+    const tooltipHeight = 82;
+    const pointerX = clientX - bounds.left;
+    const pointerY = clientY - bounds.top;
+    setSectorTooltip({
+      sektor,
+      nilai,
+      kontribusi,
+      x: pointerX + tooltipWidth + 18 > bounds.width ? pointerX - tooltipWidth - 14 : pointerX + 14,
+      y: pointerY + tooltipHeight + 14 > bounds.height ? pointerY - tooltipHeight - 12 : pointerY + 14,
+    });
+  };
+
+  const filteredMigrationEdges = useMemo(() => {
+    if (!migrationDataset) return [];
+    return migrationDataset.edges.filter(edge =>
+      (migrationOrigin === 'all' || edge.Prov_Asal === migrationOrigin) &&
+      (migrationDestination === 'all' || edge.Prov_Tujuan === migrationDestination)
+    );
+  }, [migrationDataset, migrationOrigin, migrationDestination]);
+
+  const migrationStats = useMemo(() => {
+    const total = d3.sum(filteredMigrationEdges, edge => edge.Jumlah_Migran);
+    const topRoute = d3.greatest(filteredMigrationEdges, edge => edge.Jumlah_Migran);
+    const inflows = Array.from(
+      d3.rollup(filteredMigrationEdges, values => d3.sum(values, edge => edge.Jumlah_Migran), edge => edge.Prov_Tujuan),
+      ([province, value]) => ({ province, value })
+    ).sort((a, b) => b.value - a.value);
+    const outflows = Array.from(
+      d3.rollup(filteredMigrationEdges, values => d3.sum(values, edge => edge.Jumlah_Migran), edge => edge.Prov_Asal),
+      ([province, value]) => ({ province, value })
+    ).sort((a, b) => b.value - a.value);
+
+    return {
+      total,
+      topRoute,
+      topDestination: inflows[0],
+      topOrigin: outflows[0],
+      topDestinationShare: total > 0 ? (inflows[0]?.value ?? 0) / total : 0,
+    };
+  }, [filteredMigrationEdges]);
 
   const chapterOneHighlights = [
     {
@@ -249,19 +293,25 @@ export default function App() {
 
   const chapterTwoHighlights = [
     {
-      label: 'Wilayah teratas',
-      value: <>{spatialByPulau[0]?.pulau ?? '—'} &middot; <AnimatedNumber value={spatialByPulau[0]?.avgIPM.toFixed(1) ?? '0.0'} /></>,
-      note: 'Rata-rata IPM tertinggi di pulau tersebut',
+      label: 'Arus lintas provinsi',
+      value: `${migrationStats.total.toLocaleString('id-ID')} jiwa`,
+      note: `${filteredMigrationEdges.length.toLocaleString('id-ID')} rute pada filter aktif`,
     },
     {
-      label: 'Kesenjangan spatial',
-      value: <><AnimatedNumber value={Math.max(...spatialByPulau.map(d => d.avgIPM)).toFixed(1)} /> &ndash; <AnimatedNumber value={Math.min(...spatialByPulau.map(d => d.avgIPM)).toFixed(1)} /></>,
-      note: 'Jarak rata-rata IPM antar pulau',
+      label: 'Rute terbesar',
+      value: migrationStats.topRoute
+        ? `${migrationStats.topRoute.Prov_Asal} → ${migrationStats.topRoute.Prov_Tujuan}`
+        : 'Belum ada arus',
+      note: migrationStats.topRoute
+        ? `${migrationStats.topRoute.Jumlah_Migran.toLocaleString('id-ID')} jiwa`
+        : 'Ubah filter untuk melihat rute',
     },
     {
-      label: 'Pola utama',
-      value: 'Timur masih tertinggal',
-      note: 'Kekayaan sumber daya belum otomatis mengurangi kesenjangan',
+      label: 'Tujuan arus terbesar',
+      value: migrationStats.topDestination?.province ?? 'Belum ada arus',
+      note: migrationStats.topDestination
+        ? `${migrationStats.topDestination.value.toLocaleString('id-ID')} jiwa · ${(migrationStats.topDestinationShare * 100).toFixed(1)}% dari arus terpilih`
+        : 'Ubah filter untuk melihat tujuan',
     },
   ];
 
@@ -291,7 +341,7 @@ export default function App() {
         title={<WaveText text="Ketimpangan Pembangunan Indonesia" />}
         subtitle={
           <>
-              Dari Aceh hingga Papua, pembangunan Indonesia menunjukkan capaian yang berbeda antarwilayah. Di balik rata-rata nasional, terdapat daerah yang berkembang lebih cepat, tertinggal, serta sektor ekonomi dengan kontribusi nilai tambah yang berbeda.
+            Dari Aceh hingga Papua, pembangunan Indonesia menunjukkan capaian yang berbeda antarwilayah. Di balik rata-rata nasional, terdapat daerah yang berkembang lebih cepat, tertinggal, serta sektor ekonomi dengan kontribusi nilai tambah yang berbeda.
           </>
         }
       >
@@ -309,11 +359,9 @@ export default function App() {
           title="Pola Multivariat Antarprovinsi"
           subtitle="Dalam ruang dengan puluhan indikator, setiap provinsi tidak hanya menampilkan satu angka, tetapi posisi relatifnya di dalam sistem pembangunan nasional."
           narration={
-              <>
-                Sepuluh indikator utama menggambarkan kondisi pembangunan di setiap provinsi. Melalui PCA,
-                indikator tersebut dirangkum ke dalam dua sumbu utama sehingga pola dan perbedaan karakteristik
-                antarwilayah dapat terlihat lebih jelas.
-              </>
+            <>
+              Sepuluh indikator utama menggambarkan kondisi pembangunan di setiap provinsi. Melalui PCA, indikator tersebut dirangkum ke dalam dua sumbu utama sehingga pola dan perbedaan karakteristik antarwilayah dapat terlihat lebih jelas.
+            </>
           }
           context={
             <>
@@ -475,8 +523,7 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
 
                 {pcaTab === 'pca' && (
                   <ChartCaption>
-                    Setiap titik mewakili satu provinsi. Sumbu menggambarkan kombinasi linear dari sepuluh indikator,
-                    sementara warna membedakan asal pulau.
+                    Setiap titik mewakili satu provinsi. Sumbu merangkum variasi dari sepuluh indikator; panah menunjukkan arah loading indikator dan diskalakan untuk keterbacaan. Warna membedakan asal pulau.
                   </ChartCaption>
                 )}
                 {pcaTab === 'parallel' && (
@@ -497,8 +544,10 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
           </div>
 
           <div className="mt-6">
-            <InsightPanel title="Apa yang terungkap?">
-              <p>
+            <div className="rounded-2xl border border-line bg-canvas p-4 text-sm leading-6 text-ink-soft shadow-sm">
+              <p className="font-semibold uppercase tracking-[0.12em] text-[10px] text-ink-muted">Interpretasi</p>
+              <p className="mt-3 font-medium text-ink">Capaian pembangunan berbeda antarprovinsi.</p>
+              <p className="mt-2">
                 <strong>{topIPM.provinsi}</strong> mencatat IPM tertinggi dengan nilai {topIPM.ipm.toFixed(1)}, sementara
                 <strong> {bottomIPM.provinsi}</strong> berada di posisi terendah dengan {bottomIPM.ipm.toFixed(1)}. Korelasi
                 antara IPM dan kemiskinan menunjukkan hubungan negatif yang kuat (r = {corrIPMKemiskinan.toFixed(2)}), yang
@@ -506,30 +555,30 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
                 akses listrik memiliki korelasi positif dengan IPM (r = {corrIPMElektrifikasi.toFixed(2)}), menunjukkan bahwa
                 ketersediaan layanan dasar turut berkaitan dengan capaian pendidikan, kesehatan, dan produktivitas masyarakat.
               </p>
-            </InsightPanel>
+            </div>
           </div>
         </ChapterSection>
       </div>
 
       <TransitionQuote
-        quote="Satu angka tidak pernah menceritakan semuanya. Di balik rata-rata nasional, terdapat kesenjangan wilayah yang membentuk perbedaan peluang dan masa depan."
+        quote="Pola pembangunan memberi konteks; arus migrasi memperlihatkan hubungan nyata antarwilayah melalui perpindahan penduduk."
       />
 
       <div id="bab-2" className="scroll-mt-16">
         <ChapterSection
           chapter="Bab 2"
-          title="Kesenjangan Spasial di Bawah Level Provinsi"
-          subtitle="Ketika kita menuruni skala dari provinsi ke kabupaten dan kota, pola geografis yang lebih tajam mulai tampak."
+          title="Arus Migrasi Risen Antarprovinsi"
+          subtitle={`Data migrasi risen ${migrationDataset?.years.join(', ') ?? '2022'} mencatat provinsi tempat tinggal lima tahun sebelumnya dan provinsi tempat tinggal saat pencacahan.`}
           narration={
             <>
-              Dalam pembangunan, jarak bukan hanya soal lokasi, tetapi juga akses, layanan, dan peluang. Peta choropleth membantu melihat bagaimana kondisi antarwilayah berbeda dan menunjukkan daerah yang menyimpang dari pola umum.
+              Setiap arus menghubungkan provinsi asal dengan tujuan. Sankey merangkum volume antar pasangan, sementara Flowmap menempatkan rute pada geografi Indonesia dengan arah panah dan ketebalan garis yang mengikuti jumlah migran.
             </>
           }
           context={
             <>
-              <strong className="text-ink">Yang perlu dibedakan:</strong>
+              <strong className="text-ink">Batas pembacaan:</strong>
               <br />
-              Kesenjangan tidak hanya terlihat dari rata-rata provinsi, tetapi juga dari sebarannya di setiap wilayah. Daerah yang berdekatan pun bisa memiliki akses layanan yang berbeda, sehingga angka agregat belum tentu menggambarkan kondisi sebenarnya.
+              Workbook hanya menyediakan tahun 2022. Karena itu, visualisasi membandingkan tujuan dan asal pada tahun tersebut, bukan perubahan tren dari tahun ke tahun. Jumlah migran menunjukkan volume perpindahan, bukan alasan seseorang pindah.
             </>
           }
         >
@@ -545,76 +594,84 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
 
           <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-6 lg:items-stretch">
             <div className="lg:col-span-1 flex h-full flex-col gap-4">
-              <ProvinceSelector
-                provinces={ALL_PROVINCES}
-                selected={highlighted}
-                onToggle={toggleProvince}
-                onClear={() => setHighlighted(new Set())}
-              />
-
-              <div className="bg-white border border-line rounded-xl p-4 shadow-sm">
-                <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted block mb-3">
-                  Indikator peta
-                </label>
-                <select
-                  value={mapMetric}
-                  onChange={e => setMapMetric(e.target.value)}
-                  className="w-full text-sm bg-canvas border border-line rounded-lg px-3 py-2 text-ink focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-colors"
-                >
-                  {MAP_METRICS.map(m => (
-                    <option key={m.key} value={m.key}>{m.label}</option>
-                  ))}
-                </select>
+              <div className="story-soft-panel space-y-4 p-4">
+                <h3 className="text-sm font-semibold text-ink">Filter arus</h3>
+                <div>
+                  <label htmlFor="migration-origin" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Provinsi asal</label>
+                  <div className="relative">
+                    <select
+                      id="migration-origin"
+                      value={migrationOrigin}
+                      onChange={event => setMigrationOrigin(event.target.value)}
+                      className="w-full appearance-none rounded-xl border border-line bg-white/75 px-3.5 py-3 pr-10 text-sm font-medium text-ink shadow-sm transition-colors hover:border-accent/40 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15"
+                    >
+                      <option value="all">Semua provinsi</option>
+                      {(migrationDataset?.provinces ?? []).map(province => <option key={province} value={province}>{province}</option>)}
+                    </select>
+                    <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="migration-destination" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">Provinsi tujuan</label>
+                  <div className="relative">
+                    <select
+                      id="migration-destination"
+                      value={migrationDestination}
+                      onChange={event => setMigrationDestination(event.target.value)}
+                      className="w-full appearance-none rounded-xl border border-line bg-white/75 px-3.5 py-3 pr-10 text-sm font-medium text-ink shadow-sm transition-colors hover:border-accent/40 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/15"
+                    >
+                      <option value="all">Semua provinsi</option>
+                      {(migrationDataset?.provinces ?? []).map(province => <option key={province} value={province}>{province}</option>)}
+                    </select>
+                    <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+                  </div>
+                </div>
               </div>
             </div>
 
             <div className="lg:col-span-1">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-ink">
-                  Peta choropleth "{mapMetricInfo.label}"
-                </h3>
+                <h3 className="text-base font-semibold text-ink">Asal → tujuan · {migrationDataset?.years.join(', ') ?? '2022'}</h3>
               </div>
 
-              <div className="bg-white border border-line rounded-xl p-4 sm:p-6 overflow-x-auto">
-                {geo && (
-                  <>
-                    <ChoroplethMap
-                      geo={geo}
-                      data={PROVINCE_DATA}
-                      metric={mapMetric}
-                      metricLabel={mapMetricInfo.label}
-                      highlighted={highlighted}
-                      width={1000}
-                      height={560}
-                    />
-                    <ChartCaption>
-                      Warna wilayah merepresentasikan nilai {mapMetricInfo.label.toLowerCase()}. Wilayah yang disorot
-                      memiliki garis tepi lebih tebal agar lebih mudah dibedakan.
-                    </ChartCaption>
-                  </>
-                )}
-                {!geo && (
-                  <div className="h-[400px] flex items-center justify-center text-ink-muted text-sm">
-                    Memuat peta…
-                  </div>
+              <div className="story-soft-panel p-4 sm:p-6">
+                {migrationError ? (
+                  <div role="alert" className="flex min-h-40 items-center justify-center text-sm text-warm-deep">Data migrasi gagal dimuat: {migrationError}</div>
+                ) : migrationDataset ? (
+                  migrationChartsVisible ? (
+                    <Suspense fallback={<div className="flex min-h-[1680px] items-start justify-center pt-12 text-sm text-ink-muted">Memuat visualisasi migrasi…</div>}>
+                      <MigrationFlowCharts edges={filteredMigrationEdges} provinces={migrationDataset.provinces} />
+                    </Suspense>
+                  ) : (
+                    <div className="flex min-h-[1680px] items-start justify-center pt-12 text-sm text-ink-muted">Visualisasi migrasi akan dimuat saat section mendekati layar.</div>
+                  )
+                ) : (
+                  <div className="flex min-h-40 items-center justify-center text-sm text-ink-muted">Membaca workbook migrasi…</div>
                 )}
               </div>
-
             </div>
           </div>
 
           <div className="mt-6">
-            <InsightPanel title="Pola yang terlihat">
-              <p>
-Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangunan yang relatif lebih rendah dibandingkan wilayah barat Indonesia. Tingginya kemiskinan dan terbatasnya akses terhadap layanan dasar membuat kesenjangan antarwilayah semakin terlihat dalam kehidupan sehari-hari. Sementara itu, tingginya pendapatan di suatu wilayah belum tentu diikuti kualitas hidup yang setara, karena potensi ekonomi perlu didukung oleh pemerataan akses, infrastruktur, dan kapasitas masyarakat lokal.
+            <div className="rounded-2xl border border-line bg-canvas p-4 text-sm leading-6 text-ink-soft shadow-sm">
+              <p className="font-semibold uppercase tracking-[0.12em] text-[10px] text-ink-muted">Interpretasi</p>
+              <p className="mt-3 font-medium text-ink">
+                {migrationStats.topRoute && migrationStats.topDestination
+                  ? `Rute terbesar mengarah ke ${migrationStats.topRoute.Prov_Tujuan}.`
+                  : 'Belum ada arus yang cocok dengan filter.'}
               </p>
-            </InsightPanel>
+              <p className="mt-2">
+                {migrationStats.topRoute && migrationStats.topDestination ? (
+                  <>Pada kombinasi filter saat ini, rute terbesar adalah <strong>{migrationStats.topRoute.Prov_Asal} → {migrationStats.topRoute.Prov_Tujuan}</strong> dengan {migrationStats.topRoute.Jumlah_Migran.toLocaleString('id-ID')} jiwa. <strong>{migrationStats.topDestination.province}</strong> menerima arus masuk terbesar, sebanyak {migrationStats.topDestination.value.toLocaleString('id-ID')} jiwa atau {(migrationStats.topDestinationShare * 100).toFixed(1)}% dari seluruh arus yang ditampilkan setelah filter. Angka ini menggambarkan konsentrasi tujuan, tetapi tidak menjelaskan motif perpindahan.</>
+                ) : 'Tidak ada arus lintas provinsi yang sesuai dengan kombinasi filter saat ini.'}
+              </p>
+            </div>
           </div>
         </ChapterSection>
       </div>
 
       <TransitionQuote
-        quote="Ketimpangan tidak tersebar secara merata. Perbedaan jarak, akses, dan kondisi antarwilayah ikut membentuk kesenjangan yang ada."
+        quote="Arus menunjukkan hubungan asal dan tujuan; untuk memahami alasan perpindahan, diperlukan data lain di luar matriks ini."
       />
 
       <div id="bab-3" className="scroll-mt-16">
@@ -645,7 +702,7 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
             ))}
           </div>
 
-          <div className="mb-28 lg:mb-32" ref={sectorChartRef}>
+          <div className="relative mb-28 lg:mb-32" ref={sectorChartRef} onMouseLeave={() => setSectorTooltip(null)}>
             <div className="grid gap-8 lg:gap-10 lg:grid-cols-[0.7fr_1.3fr] lg:items-center">
               <div className="rounded-2xl border border-line bg-canvas p-4 text-sm leading-6 text-ink-soft shadow-sm">
                 <p className="font-semibold uppercase tracking-[0.12em] text-[10px] text-ink-muted">Interpretasi</p>
@@ -672,7 +729,17 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
                     const barColor = ['#1d6d7b', '#3d8c93', '#6b7f94', '#d98d55', '#7d8a63', '#4b7aa6', '#c66a5d', '#9a7ba1', '#4a6a5e'][i % 9];
 
                     return (
-                      <div key={s.sektor} className="space-y-1.5">
+                      <div
+                        key={s.sektor}
+                        className="space-y-1.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+                        tabIndex={0}
+                        onMouseEnter={event => updateSectorTooltip(event.clientX, event.clientY, s.sektor, s.nilai, pct)}
+                        onMouseMove={event => updateSectorTooltip(event.clientX, event.clientY, s.sektor, s.nilai, pct)}
+                        onFocus={event => {
+                          const bounds = event.currentTarget.getBoundingClientRect();
+                          updateSectorTooltip(bounds.right, bounds.top + bounds.height / 2, s.sektor, s.nilai, pct);
+                        }}
+                      >
                         <div className="flex items-center justify-between gap-3 text-[11px] sm:text-[12px]">
                           <span className="min-w-0 flex-1 truncate pr-4 text-ink-soft">{s.sektor}</span>
                           <span
@@ -696,7 +763,6 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
                               transitionDelay: `${i * 180 + 500}ms`,
                               boxShadow: sectorChartVisible ? '0 8px 16px rgba(29, 109, 123, 0.14)' : 'none',
                             }}
-                            title={`${s.sektor}: ${pct.toFixed(1)}%`}
                           />
                         </div>
                       </div>
@@ -705,6 +771,21 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
                 </div>
               </div>
             </div>
+            {sectorTooltip && (
+              <div
+                role="tooltip"
+                className="map-tooltip visible"
+                style={{ left: sectorTooltip.x, top: sectorTooltip.y, minWidth: 230, whiteSpace: 'normal' }}
+              >
+                <div style={{ fontWeight: 700, marginBottom: 3 }}>{sectorTooltip.sektor}</div>
+                <div style={{ color: '#a8b6c0' }}>
+                  Nilai PDB: <span style={{ color: '#fff', fontWeight: 600 }}>{sectorTooltip.nilai.toLocaleString('id-ID')} T</span>
+                </div>
+                <div style={{ color: '#a8b6c0' }}>
+                  Kontribusi: <span style={{ color: '#fff', fontWeight: 600 }}>{sectorTooltip.kontribusi.toFixed(1)}%</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mt-28 mb-4 flex items-center justify-between gap-3 flex-wrap">
@@ -780,38 +861,32 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
         <div className="max-w-5xl mx-auto px-6 sm:px-8 pb-20">
           <div className="mb-14 text-center">
             <h3 className="mt-3 text-3xl font-bold tracking-[-0.04em] text-ink sm:text-4xl">
-              3 insight yang paling menentukan
+              3 Sisi Ketimpangan yang Terlihat
             </h3>
           </div>
 
           <div className="grid gap-8 lg:gap-6 lg:grid-cols-3">
             <article className="rounded-2xl border border-line bg-white p-6 shadow-sm">
-              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Insight 01</div>
-              <h4 className="text-xl font-bold text-ink">IPM dan kemiskinan bergerak seiring.</h4>
+              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">01</div>
+              <h4 className="text-xl font-bold text-ink">IPM lebih tinggi berkaitan dengan kemiskinan lebih rendah.</h4>
               <p className="mt-3 text-sm leading-7 text-ink-soft">
-                Kualitas hidup tidak naik secara merata ketika kemiskinan tetap tinggi. Korelasi yang kuat menunjukkan
-                bahwa kesejahteraan tidak hanya ditentukan oleh pendapatan semata, tetapi juga oleh kapasitas wilayah
-                dalam menurunkan pengeluaran dan memperluas akses terhadap kebutuhan dasar.
+                Pada 34 provinsi dalam data yang digunakan, IPM dan kemiskinan memiliki korelasi negatif kuat (r = {corrIPMKemiskinan.toFixed(2)}). Artinya, provinsi dengan kemiskinan lebih tinggi cenderung memiliki IPM lebih rendah. Hubungan ini bersifat korelasional dan tidak menunjukkan sebab-akibat.
               </p>
             </article>
 
             <article className="rounded-2xl border border-line bg-white p-6 shadow-sm">
-              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Insight 02</div>
-              <h4 className="text-xl font-bold text-ink">Listrik adalah pengungkit kesejahteraan.</h4>
+              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">02</div>
+              <h4 className="text-xl font-bold text-ink">Elektrifikasi berkaitan dengan IPM lebih tinggi.</h4>
               <p className="mt-3 text-sm leading-7 text-ink-soft">
-                Akses dasar seperti listrik menjadi fondasi penting bagi pendidikan, kesehatan, dan produktivitas rumah
-                tangga. Artinya, infrastruktur dasar bukan pelengkap teknis, melainkan prasyarat agar manfaat
-                pembangunan benar-benar menjangkau masyarakat.
+                Akses elektrifikasi dan IPM menunjukkan korelasi positif (r = {corrIPMElektrifikasi.toFixed(2)}) pada data provinsi ini. Angka tersebut menunjukkan keduanya cenderung meningkat bersama, tetapi belum membuktikan bahwa elektrifikasi sendiri menyebabkan kenaikan IPM.
               </p>
             </article>
 
             <article className="rounded-2xl border border-line bg-white p-6 shadow-sm">
-              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Insight 03</div>
-              <h4 className="text-xl font-bold text-ink">Ekonomi nasional masih sangat terkonsentrasi.</h4>
+              <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">03</div>
+              <h4 className="text-xl font-bold text-ink">Tiga sektor terbesar mencakup 63,6% nilai pada tabel.</h4>
               <p className="mt-3 text-sm leading-7 text-ink-soft">
-                Nilai tambah ekonomi belum terdistribusi secara merata. Sektor bernilai tinggi mendominasi struktur PDB,
-                sehingga pertumbuhan agregat bisa terlihat kuat, tetapi dampaknya terhadap kesejahteraan masyarakat luas
-                masih terbatas dan belum sepenuhnya merata di wilayah yang tertinggal.
+                Jasa Lainnya menyumbang 23,6% (Rp3.339 triliun), Pertanian, Kehutanan &amp; Perikanan 20,6%, dan Industri Pengolahan 19,4%. Gabungannya menunjukkan porsi besar pada tiga kelompok teratas dalam tabel; angka ini sendiri tidak mengukur pemerataan pendapatan, dampak kesejahteraan, atau konsentrasi kepemilikan.
               </p>
             </article>
           </div>
@@ -819,9 +894,7 @@ Indonesia Timur, khususnya Maluku dan Papua, masih menunjukkan capaian pembangun
           <div className="mt-36 mb-20">
             <blockquote className="relative mx-auto max-w-4xl pl-0 text-justify text-[1.08rem] font-medium italic leading-[1.9] text-ink sm:text-[1.5rem]">
               <span className="absolute -left-1 -top-8 text-[3.5rem] font-bold leading-none text-ink/10">“</span>
-              Peningkatan kesejahteraan tidak cukup hanya dijalankan melalui pertumbuhan agregat. Untuk benar-benar
-              mengurangi ketimpangan, perlu ada pemerataan akses, penguatan infrastruktur dasar, dan perluasan peluang
-              ekonomi di wilayah yang tertinggal.
+              Di balik angka rata-rata nasional, pembangunan Indonesia bergerak dengan ritme yang berbeda di setiap wilayah. Arus migrasi memperlihatkan keterhubungan antardaerah, sementara perbedaan IPM, kemiskinan, elektrifikasi, dan struktur ekonomi menunjukkan bahwa kemajuan tidak hadir dalam satu wajah. Pada akhirnya, pertumbuhan baru benar-benar menjadi kemajuan bersama ketika manfaat dan kesempatan dapat dirasakan oleh lebih banyak wilayah.
               <span className="ml-1 text-[3.5rem] align-middle font-bold leading-none text-ink/10">”</span>
             </blockquote>
           </div>

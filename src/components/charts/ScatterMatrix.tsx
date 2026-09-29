@@ -105,19 +105,15 @@ export default function ScatterMatrix({ data, variables, highlighted, focusPair 
           .attr('stroke-width', isFocusedPair ? 1.8 : 0.6);
 
         if (row === col) {
-          // Diagonal: variable name + self-correlation = 1
+          // The diagonal is each variable's self-correlation.
           const r = corrMatrix[row][col];
-          
-          // Color fill based on how strongly this var correlates with others
-          const avgCorr = corrMatrix[row].reduce((s, v, c) => c !== row ? s + Math.abs(v) : s, 0) / (n - 1);
-          
           cellG.append('text')
             .attr('x', cellW / 2).attr('y', cellH / 2 - 8)
             .attr('text-anchor', 'middle')
             .style('font-size', '16px')
             .style('font-weight', '700')
-            .style('fill', avgCorr > 0.6 ? '#1a7f8a' : avgCorr > 0.4 ? '#e8a838' : '#6b8294')
-            .text(avgCorr.toFixed(2));
+            .style('fill', '#1a7f8a')
+            .text(r.toFixed(2));
 
           const diagLabelSmall = cellG.append('text')
             .attr('x', cellW / 2)
@@ -135,7 +131,7 @@ export default function ScatterMatrix({ data, variables, highlighted, focusPair 
               .text(line);
           });
 
-          cellG.append('title').text(`Rata-rata korelasi ${INDICATOR_LABELS[xVar] || xVar} dengan variabel lain: ${avgCorr.toFixed(2)}`);
+          cellG.append('title').text(`Korelasi ${INDICATOR_LABELS[xVar] || xVar} dengan dirinya sendiri: ${r.toFixed(2)}`);
 
         } else {
           // Scatter

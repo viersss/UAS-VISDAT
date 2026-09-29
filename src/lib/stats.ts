@@ -44,48 +44,62 @@ export function standardize(values: number[]): number[] {
   return values.map(v => (v - mean) / std);
 }
 
-function transpose(matrix: number[][]): number[][] {
-  return matrix[0].map((_, i) => matrix.map(row => row[i]));
-}
+function eigenDecompositionSymmetric(matrix: number[][]) {
+  const size = matrix.length;
+  const values = matrix.map(row => [...row]);
+  const vectors = Array.from({ length: size }, (_, row) =>
+    Array.from({ length: size }, (_, column) => Number(row === column))
+  );
+  const maxIterations = 100 * size * size;
 
-function multiply(a: number[][], b: number[][]): number[][] {
-  const result: number[][] = [];
-  for (let i = 0; i < a.length; i++) {
-    result[i] = [];
-    for (let j = 0; j < b[0].length; j++) {
-      let sum = 0;
-      for (let k = 0; k < b.length; k++) sum += a[i][k] * b[k][j];
-      result[i][j] = sum;
+  for (let iteration = 0; iteration < maxIterations; iteration++) {
+    let p = 0;
+    let q = 1;
+    let largest = 0;
+
+    for (let row = 0; row < size; row++) {
+      for (let column = row + 1; column < size; column++) {
+        if (Math.abs(values[row][column]) > largest) {
+          largest = Math.abs(values[row][column]);
+          p = row;
+          q = column;
+        }
+      }
+    }
+
+    if (largest < 1e-10) break;
+
+    const angle = 0.5 * Math.atan2(2 * values[p][q], values[q][q] - values[p][p]);
+    const cosine = Math.cos(angle);
+    const sine = Math.sin(angle);
+    const pp = values[p][p];
+    const qq = values[q][q];
+    const pq = values[p][q];
+
+    for (let index = 0; index < size; index++) {
+      if (index === p || index === q) continue;
+      const ip = values[index][p];
+      const iq = values[index][q];
+      values[index][p] = values[p][index] = cosine * ip - sine * iq;
+      values[index][q] = values[q][index] = sine * ip + cosine * iq;
+    }
+
+    values[p][p] = cosine ** 2 * pp - 2 * sine * cosine * pq + sine ** 2 * qq;
+    values[q][q] = sine ** 2 * pp + 2 * sine * cosine * pq + cosine ** 2 * qq;
+    values[p][q] = values[q][p] = 0;
+
+    for (let row = 0; row < size; row++) {
+      const vp = vectors[row][p];
+      const vq = vectors[row][q];
+      vectors[row][p] = cosine * vp - sine * vq;
+      vectors[row][q] = sine * vp + cosine * vq;
     }
   }
-  return result;
-}
 
-function eigenDecomposition2x2(a: number, b: number, c: number, d: number) {
-  const trace = a + d;
-  const det = a * d - b * c;
-  const discriminant = Math.sqrt(Math.max(0, (trace * trace) / 4 - det));
-  const lambda1 = trace / 2 + discriminant;
-  const lambda2 = trace / 2 - discriminant;
-
-  let v1: [number, number], v2: [number, number];
-  if (Math.abs(b) > 1e-10) {
-    v1 = [lambda1 - d, c];
-    v2 = [lambda2 - d, c];
-  } else if (Math.abs(c) > 1e-10) {
-    v1 = [b, lambda1 - a];
-    v2 = [b, lambda2 - a];
-  } else {
-    v1 = [1, 0];
-    v2 = [0, 1];
-  }
-
-  const norm1 = Math.hypot(v1[0], v1[1]) || 1;
-  const norm2 = Math.hypot(v2[0], v2[1]) || 1;
-  v1 = [v1[0] / norm1, v1[1] / norm1];
-  v2 = [v2[0] / norm2, v2[1] / norm2];
-
-  return { eigenvalues: [lambda1, lambda2], eigenvectors: [v1, v2] };
+  return {
+    eigenvalues: values.map((row, index) => row[index]),
+    eigenvectors: vectors,
+  };
 }
 
 export function computePCA(
@@ -96,66 +110,50 @@ export function computePCA(
   const n = data.length;
   const p = variables.length;
 
-  const standardized: number[][] = data.map(d =>
-    standardize(variables.map(v => d[v as keyof ProvinceDatum] as number))
+  const columns = variables.map(variable => data.map(d => d[variable as keyof ProvinceDatum] as number));
+  const means = columns.map(values => values.reduce((sum, value) => sum + value, 0) / n);
+  const deviations = columns.map((values, column) => {
+    const sumSquares = values.reduce((sum, value) => sum + (value - means[column]) ** 2, 0);
+    return Math.sqrt(sumSquares / Math.max(1, n - 1)) || 1;
+  });
+  const standardized = data.map((_, row) =>
+    columns.map((values, column) => (values[row] - means[column]) / deviations[column])
   );
 
-  const cov: number[][] = Array.from({ length: p }, () => Array(p).fill(0));
+  const covariance: number[][] = Array.from({ length: p }, () => Array(p).fill(0));
   for (let i = 0; i < p; i++) {
     for (let j = 0; j < p; j++) {
       let sum = 0;
       for (let k = 0; k < n; k++) sum += standardized[k][i] * standardized[k][j];
-      cov[i][j] = sum / (n - 1);
+      covariance[i][j] = sum / Math.max(1, n - 1);
     }
   }
 
-  let eigenvalues: number[] = [];
-  let eigenvectors: number[][] = [];
-
-  if (p === 1) {
-    eigenvalues = [cov[0][0]];
-    eigenvectors = [[1]];
-  } else {
-    const { eigenvalues: ev, eigenvectors: vecs } = eigenDecomposition2x2(
-      cov[0][0], cov[0][1], cov[1][0], cov[1][1]
-    );
-    eigenvalues = ev;
-    eigenvectors = vecs.map(v => [v[0], v[1]]);
-
-    for (let i = 2; i < p; i++) {
-      const expanded: number[][] = Array.from({ length: i + 1 }, () => Array(i + 1).fill(0));
-      for (let a = 0; a < i; a++) for (let b = 0; b < i; b++) expanded[a][b] = cov[a][b];
-      for (let a = 0; a <= i; a++) { expanded[a][i] = cov[a][i]; expanded[i][a] = cov[i][a]; }
-      const { eigenvalues: newEv, eigenvectors: newVecs } = eigenDecomposition2x2(
-        expanded[0][0], expanded[0][1], expanded[1][0], expanded[1][1]
-      );
-      eigenvalues = newEv;
-      eigenvectors = newVecs.map(v => {
-        const full = Array(i + 1).fill(0);
-        full[0] = v[0]; full[1] = v[1];
-        return full;
-      });
-    }
-  }
-
-  const totalVar = eigenvalues.reduce((a, b) => a + Math.max(0, b), 0) || 1;
+  const { eigenvalues, eigenvectors } = eigenDecompositionSymmetric(covariance);
+  const totalVar = eigenvalues.reduce((sum, value) => sum + Math.max(0, value), 0) || 1;
   const sorted = eigenvalues
     .map((val, idx) => ({ val, idx }))
     .sort((a, b) => b.val - a.val);
 
-  const pc1Idx = sorted[0].idx;
-  const pc2Idx = sorted[1]?.idx ?? 0;
+  const pc1Idx = sorted[0]?.idx ?? 0;
+  const pc2Idx = sorted[1]?.idx ?? pc1Idx;
   const pc1Var = (eigenvalues[pc1Idx] / totalVar) * 100;
   const pc2Var = (eigenvalues[pc2Idx] / totalVar) * 100;
 
-  const ev1 = eigenvectors[pc1Idx] || eigenvectors[0];
-  const ev2 = eigenvectors[pc2Idx] || eigenvectors[1 % eigenvectors.length];
+  const orient = (component: number) => {
+    const pivot = eigenvectors.reduce((best, row, index) =>
+      Math.abs(row[component]) > Math.abs(eigenvectors[best][component]) ? index : best, 0);
+    const sign = eigenvectors[pivot][component] < 0 ? -1 : 1;
+    return eigenvectors.map(row => row[component] * sign);
+  };
+  const ev1 = orient(pc1Idx);
+  const ev2 = orient(pc2Idx);
 
   const points: PcaResult[] = data.map((d, k) => {
     let pc1 = 0, pc2 = 0;
     for (let i = 0; i < p; i++) {
-      pc1 += standardized[k][i] * (ev1[i] || 0);
-      pc2 += standardized[k][i] * (ev2[i] || 0);
+      pc1 += standardized[k][i] * ev1[i];
+      pc2 += standardized[k][i] * ev2[i];
     }
     return {
       provinsi: d.provinsi,
@@ -168,8 +166,8 @@ export function computePCA(
 
   const loadings = variables.map((v, i) => ({
     variable: v,
-    pc1: (ev1[i] || 0) * Math.sqrt(eigenvalues[pc1Idx] || 1),
-    pc2: (ev2[i] || 0) * Math.sqrt(eigenvalues[pc2Idx] || 1),
+    pc1: ev1[i] * Math.sqrt(Math.max(0, eigenvalues[pc1Idx])),
+    pc2: ev2[i] * Math.sqrt(Math.max(0, eigenvalues[pc2Idx])),
   }));
 
   return {

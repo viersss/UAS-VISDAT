@@ -23,7 +23,9 @@ export default function MetricStrip({ metrics }: MetricStripProps) {
           />
           <span className="hero-metric-label">{m.label}</span>
           <span className="hero-metric-value">
-            <AnimatedNumber value={m.value} />
+            {typeof m.value === 'string' || typeof m.value === 'number'
+              ? <AnimatedNumber value={m.value} />
+              : m.value}
           </span>
           {m.sub && (
             <span className="hero-metric-sub">{m.sub}</span>

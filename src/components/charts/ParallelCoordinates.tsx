@@ -65,7 +65,7 @@ export default function ParallelCoordinates({ data, variables, highlighted, widt
       .padding(0.5);
 
     // Gradient background band
-    const banding = g.append('rect')
+    g.append('rect')
       .attr('x', 0).attr('y', 0)
       .attr('width', innerW).attr('height', innerH)
       .attr('fill', 'url(#pc-bg-grad)').attr('rx', 4).attr('opacity', 0.35);
@@ -85,14 +85,6 @@ export default function ParallelCoordinates({ data, variables, highlighted, widt
       axisG.selectAll('text').style('font-size', '10px').style('fill', '#6b8294');
       axisG.select('.domain').attr('stroke', '#c4cdd5').attr('stroke-width', 1.5);
       axisG.selectAll('.tick line').attr('stroke', '#c4cdd5');
-
-      // Axis area highlight on hover
-      const axisHitArea = g.append('rect')
-        .attr('x', (xScale(v) ?? 0) - 20)
-        .attr('y', 0)
-        .attr('width', 40).attr('height', innerH)
-        .attr('fill', 'transparent')
-        .style('cursor', 'default');
 
       // Variable label
       const labelLines = formatAxisLabel(v);
@@ -120,7 +112,7 @@ export default function ParallelCoordinates({ data, variables, highlighted, widt
         xScale(v) ?? 0,
         scales[i](d[v as keyof ProvinceDatum] as number),
       ]);
-      return d3.line<[number, number]>().x(p => p[0]).y(p => p[1]).curve(d3.curveCatmullRom.alpha(0.5))(pts) || '';
+      return d3.line<[number, number]>().x(p => p[0]).y(p => p[1]).curve(d3.curveLinear)(pts) || '';
     };
 
     const hasHighlight = highlighted.size > 0;
