@@ -369,7 +369,7 @@ export default function App() {
             <>
               <strong className="text-ink">Yang paling mencolok:</strong>
               <br />
-PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbeda. Wilayah dengan capaian lebih rendah cenderung memiliki akses layanan dasar yang juga lebih terbatas.
+              PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbeda. Wilayah dengan capaian lebih rendah cenderung memiliki akses layanan dasar yang juga lebih terbatas.
             </>
           }
         >
@@ -570,7 +570,7 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
         <ChapterSection
           chapter="Bab 2"
           title="Arus Migrasi Risen Antarprovinsi"
-          subtitle={`Data migrasi risen ${migrationDataset?.years.join(', ') ?? '2022'} mencatat provinsi tempat tinggal lima tahun sebelumnya dan provinsi tempat tinggal saat pencacahan.`}
+          subtitle="Data migrasi risen 2024 mencatat provinsi tempat tinggal lima tahun sebelumnya dan provinsi tempat tinggal saat pencacahan."
           narration={
             <>
               Setiap arus menghubungkan provinsi asal dengan tujuan. Sankey merangkum volume antar pasangan, sementara Flowmap menempatkan rute pada geografi Indonesia dengan arah panah dan ketebalan garis yang mengikuti jumlah migran.
@@ -580,7 +580,7 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
             <>
               <strong className="text-ink">Batas pembacaan:</strong>
               <br />
-              Workbook hanya menyediakan tahun 2022. Karena itu, visualisasi membandingkan tujuan dan asal pada tahun tersebut, bukan perubahan tren dari tahun ke tahun. Jumlah migran menunjukkan volume perpindahan, bukan alasan seseorang pindah.
+              Workbook hanya menyediakan tahun 2024. Karena itu, visualisasi membandingkan tujuan dan asal pada tahun tersebut, bukan perubahan tren dari tahun ke tahun. Jumlah migran menunjukkan volume perpindahan, bukan alasan seseorang pindah.
             </>
           }
         >
@@ -633,7 +633,7 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
 
             <div className="lg:col-span-1">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-ink">Asal → tujuan · {migrationDataset?.years.join(', ') ?? '2022'}</h3>
+                <h3 className="text-base font-semibold text-ink">Asal → tujuan · 2024</h3>
               </div>
 
               <div className="story-soft-panel p-4 sm:p-6">
@@ -790,7 +790,7 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
             )}
           </div>
 
-          <div className="mt-28 mb-4 flex items-center justify-between gap-3 flex-wrap">
+          <div className="mt-16 sm:mt-28 mb-4 flex items-center justify-between gap-3 flex-wrap">
             <h3 className="text-base font-semibold text-ink">
               {hierarchyTab === 'treemap' ? 'Treemap "Proporsi Nilai Ekonomi"' : 'Sunburst "Struktur Radial"'}
             </h3>

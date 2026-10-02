@@ -20,7 +20,7 @@ export default function ChapterSection({
   return (
     <section data-reveal data-parallax className="max-w-[1360px] mx-auto px-6 sm:px-8 py-14 sm:py-20">
       <div className="mb-10 sm:mb-14">
-        <h2 className="whitespace-nowrap text-3xl font-bold tracking-[-0.03em] text-ink leading-tight sm:text-4xl">
+        <h2 className="max-w-full text-3xl font-bold tracking-[-0.03em] text-ink leading-tight sm:text-4xl">
           {title}
         </h2>
         {subtitle && (

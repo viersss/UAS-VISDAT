@@ -406,7 +406,7 @@ section[id^='bab-'] .story-card::before {
   align-items: center;
   text-align: center;
   width: 100%;
-  max-width: 960px;
+  max-width: 1080px;
 }
 
 .hero-eyebrow {
@@ -440,22 +440,57 @@ section[id^='bab-'] .story-card::before {
 }
 
 .hero-headline {
-  font-family: 'Days One', sans-serif;
-  font-size: clamp(2.5rem, 5vw, 4.6rem);
-  font-weight: 800;
+  font-family: 'Rubik', sans-serif;
   color: #f7f8f9;
   margin: 0;
   text-wrap: balance;
   text-shadow: 0 14px 32px rgba(0, 0, 0, 0.32);
 }
 
+.hero-title-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.hero-title-line-1 {
+  display: block;
+  font-size: clamp(2.1rem, 4.6vw, 4.4rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.14;
+  color: #f7f8f9;
+  white-space: normal;
+}
+
+.hero-title-line-2 {
+  display: block;
+  font-size: clamp(2.25rem, 5vw, 4.7rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.04;
+  margin-top: 0.3rem;
+}
+
+.hero-title-highlight {
+  display: inline-block;
+  background: linear-gradient(135deg, #ffffff 15%, #fed7aa 45%, #f97316 85%, #ea580c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 4px 22px rgba(249, 115, 22, 0.42));
+}
+
 .hero-subhead {
-  max-width: 38rem;
-  margin: 1.6rem 0 0;
+  max-width: 44rem;
+  margin: 1.5rem 0 0;
   font-family: 'Rubik', sans-serif;
-  font-size: clamp(1rem, 1.5vw, 1.18rem);
+  font-size: clamp(0.90rem, 1.4vw, 1.3rem);
+  font-weight: 400;
   line-height: 1.75;
-  color: rgba(255, 255, 255, 0.76);
+  color: rgba(255, 255, 255, 0.84);
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.38);
   text-wrap: pretty;
 }
@@ -598,11 +633,24 @@ section[id^='bab-'] .story-card::before {
   }
 
   .hero-headline {
-    font-size: clamp(2.2rem, 9.4vw, 3.2rem);
+    letter-spacing: -0.02em;
+  }
+
+  .hero-title-line-1 {
+    font-size: clamp(1.4rem, 6.5vw, 2.3rem);
+    line-height: 1.15;
+  }
+
+  .hero-title-line-2 {
+    font-size: clamp(1.65rem, 7.3vw, 2.6rem);
+    margin-top: 0.2rem;
+    line-height: 1.05;
   }
 
   .hero-subhead {
-    font-size: 0.96rem;
+    font-size: 0.70rem;
+    line-height: 1.6;
+    margin-top: 1.35rem;
   }
 
   .hero-metric-strip {
@@ -624,3 +672,38 @@ section[id^='bab-'] .story-card::before {
   }
 }
 
+@media (min-width: 640px) and (max-width: 900px) {
+  .hero-metric-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 639px) {
+  .hero-title-line-1,
+  .hero-title-line-2 {
+    max-width: 100%;
+  }
+
+  .story-nav-link {
+    min-height: 44px;
+  }
+
+  .story-tab-switcher button,
+  .province-selector button,
+  .province-selector input,
+  select {
+    min-height: 44px;
+  }
+
+  .map-tooltip {
+    max-width: calc(100vw - 2rem);
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

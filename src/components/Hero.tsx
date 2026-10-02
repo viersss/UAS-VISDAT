@@ -29,7 +29,7 @@ export default function Hero({ eyebrow, title, subtitle, children }: HeroProps) 
         <div className="hero-center-block">
           {eyebrow && <div className="hero-eyebrow">{eyebrow}</div>}
           <div className="hero-rule" />
-          <h1 className="hero-headline font-display tracking-normal leading-tight">{title}</h1>
+          <h1 className="hero-headline font-rubik tracking-tight leading-tight">{title}</h1>
           <p className="hero-subhead font-rubik leading-relaxed">{subtitle}</p>
 
           {children && <div className="hero-children">{children}</div>}

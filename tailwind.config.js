@@ -6,6 +6,8 @@ export default {
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         serif: ['Lora', 'ui-serif', 'Georgia', 'serif'],
+        rubik: ['Rubik', 'sans-serif'],
+        display: ['Days One', 'sans-serif'],
       },
       colors: {
         ink: { DEFAULT: '#132b3d', soft: '#425b6d', muted: '#6d8192' },

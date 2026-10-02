@@ -207,7 +207,7 @@ export default function ParallelCoordinates({ data, variables, highlighted, widt
 
   return (
     <div className="relative">
-      <svg ref={ref} width={width} height={height} className="d3-chart w-full h-auto" style={{ maxWidth: width }} />
+      <svg ref={ref} width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="d3-chart w-full h-auto" style={{ maxWidth: width }} preserveAspectRatio="xMidYMid meet" />
       {tooltip && (
         <div
           className="map-tooltip visible"

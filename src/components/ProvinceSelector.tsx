@@ -19,7 +19,7 @@ export default function ProvinceSelector({ provinces, selected, onToggle, onClea
   const selectedList = Array.from(selected);
 
   return (
-    <div className="bg-white border border-line rounded-xl p-5">
+    <div className="province-selector bg-white border border-line rounded-xl p-5">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-semibold text-ink">Sorot Provinsi</h3>

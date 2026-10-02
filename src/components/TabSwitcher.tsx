@@ -6,7 +6,7 @@ interface TabSwitcherProps {
 
 export default function TabSwitcher({ options, active, onChange }: TabSwitcherProps) {
   return (
-    <div className="inline-flex bg-canvas border border-line rounded-lg p-0.5">
+    <div className="story-tab-switcher inline-flex bg-canvas border border-line rounded-lg p-0.5">
       {options.map(opt => (
         <button
           key={opt.key}

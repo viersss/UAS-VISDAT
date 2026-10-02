@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import ReactEChartsCore from 'echarts-for-react/lib/core';
 import * as echartsCore from 'echarts/core';
 import { SankeyChart } from 'echarts/charts';
@@ -26,12 +26,28 @@ const formatNumber = (value: number) => new Intl.NumberFormat('id-ID').format(va
 export default function MigrationFlowCharts({ edges, provinces }: Props) {
   const [visualization, setVisualization] = useState('sankey');
   const [routeLimit, setRouteLimit] = useState<number | 'all'>(MAX_VISIBLE_ROUTES);
+  const [chartWidth, setChartWidth] = useState(980);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = chartContainerRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver(([entry]) => {
+      setChartWidth(entry.contentRect.width);
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
 
   const { sankeyOption, visibleEdges, routeCount, visibleCount, coverage } = useMemo(() => {
     const rankedEdges = [...edges].sort((a, b) => b.Jumlah_Migran - a.Jumlah_Migran);
     const visibleEdges = routeLimit === 'all' ? rankedEdges : rankedEdges.slice(0, routeLimit);
     const totalMigrants = edges.reduce((sum, edge) => sum + edge.Jumlah_Migran, 0);
     const visibleMigrants = visibleEdges.reduce((sum, edge) => sum + edge.Jumlah_Migran, 0);
+    const compactLayout = chartWidth < 640;
+    const labelWidth = compactLayout ? Math.max(56, Math.min(92, chartWidth * 0.28)) : 140;
+    const sideMargin = compactLayout ? labelWidth + 12 : 150;
 
     const sankeyOption: EChartsOption = {
       animationDuration: 450,
@@ -56,12 +72,12 @@ export default function MigrationFlowCharts({ edges, provinces }: Props) {
         type: 'sankey',
         orient: 'horizontal',
         nodeAlign: 'justify',
-        left: 150,
-        right: 165,
+        left: sideMargin,
+        right: compactLayout ? sideMargin : 165,
         top: 24,
         bottom: 24,
-        nodeWidth: 12,
-        nodeGap: 10,
+        nodeWidth: compactLayout ? 8 : 12,
+        nodeGap: compactLayout ? 6 : 10,
         layoutIterations: 32,
         draggable: false,
         emphasis: { focus: 'adjacency' },
@@ -87,10 +103,10 @@ export default function MigrationFlowCharts({ edges, provinces }: Props) {
         lineStyle: { color: 'source', opacity: 0.3, curveness: 0.5 },
         label: {
           color: '#425b6d',
-          fontSize: 9,
+          fontSize: compactLayout ? 8 : 9,
           distance: 5,
           overflow: 'truncate',
-          width: 140,
+          width: labelWidth,
         },
       }],
     };
@@ -102,7 +118,7 @@ export default function MigrationFlowCharts({ edges, provinces }: Props) {
       visibleCount: visibleEdges.length,
       coverage: totalMigrants > 0 ? visibleMigrants / totalMigrants : 0,
     };
-  }, [edges, provinces, routeLimit]);
+  }, [chartWidth, edges, provinces, routeLimit]);
 
   return (
     <div>
@@ -155,10 +171,8 @@ export default function MigrationFlowCharts({ edges, provinces }: Props) {
       {edges.length === 0 ? (
         <div className="flex min-h-40 items-center justify-center text-sm text-ink-muted">Tidak ada arus untuk kombinasi filter ini.</div>
       ) : visualization === 'sankey' ? (
-        <div className="w-full overflow-x-auto">
-          <div className="min-w-[780px]">
-            <ReactEChartsCore echarts={echartsCore} option={sankeyOption} notMerge style={{ width: '100%', height: 820 }} />
-          </div>
+        <div ref={chartContainerRef} className="w-full min-w-0">
+          <ReactEChartsCore echarts={echartsCore} option={sankeyOption} notMerge style={{ width: '100%', height: 820 }} />
         </div>
       ) : (
         <MigrationFlowMap edges={visibleEdges} />
