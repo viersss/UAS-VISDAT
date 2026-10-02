@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react';
+
 interface TransitionQuoteProps {
-  quote: string;
+  quote: ReactNode;
 }
 
 export default function TransitionQuote({ quote }: TransitionQuoteProps) {

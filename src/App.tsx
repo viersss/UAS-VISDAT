@@ -572,7 +572,12 @@ export default function App() {
       </div>
 
       <TransitionQuote
-        quote="Pola pembangunan memberi konteks; arus migrasi memperlihatkan hubungan nyata antarwilayah melalui perpindahan penduduk."
+        quote={
+          <>
+            Setiap wilayah memiliki jalannya sendiri, tetapi arus penduduk menunjukkan bahwa{' '}
+            <strong>tak ada wilayah yang benar-benar berdiri sendiri</strong>.
+          </>
+        }
       />
 
       <div id="bab-2" className="scroll-mt-16">
@@ -682,7 +687,13 @@ export default function App() {
       </div>
 
       <TransitionQuote
-        quote="Arus menunjukkan hubungan asal dan tujuan; untuk memahami alasan perpindahan, diperlukan data lain di luar matriks ini."
+        quote={
+          <>
+            Garis-garis migrasi pada matriks ini <strong>sekadar merekam jejak</strong> perpindahan manusia. Sementara itu,{' '}
+            <strong>motif dan realitas ketimpangan</strong> yang menggerakkan langkah mereka tetap tersembunyi, menuntut kita
+            untuk menelisik data sosial-ekonomi di luar bingkai peta ini.
+          </>
+        }
       />
 
       <div id="bab-3" className="scroll-mt-16">
@@ -865,7 +876,12 @@ export default function App() {
       <div id="epilog" className="scroll-mt-16">
         <div className="mb-14 lg:mb-20">
           <TransitionQuote
-            quote="Ketimpangan bukan sekadar angka. Di dalamnya terdapat perbedaan akses, peluang, dan kesempatan untuk membangun masa futur."
+            quote={
+              <>
+                Ketimpangan melampaui sekadar statistik. Di baliknya, terdapat realitas tentang senjangnya akses, hilangnya
+                pemerataan, dan terhambatnya hak untuk <strong>meningkatkan kualitas hidup</strong>.
+              </>
+            }
           />
         </div>
 
@@ -905,7 +921,7 @@ export default function App() {
           <div className="story-ending-quote mt-36 mb-20">
             <blockquote className="closing-quote mx-auto max-w-3xl border-y border-accent/20 py-12 text-center font-serif text-xl italic leading-relaxed text-accent-deep sm:text-2xl">
               <span aria-hidden="true" className="closing-quote-mark closing-quote-mark--open">“</span>
-              Di balik angka rata-rata nasional, pembangunan Indonesia bergerak dengan ritme yang berbeda di setiap wilayah. Arus migrasi memperlihatkan keterhubungan antardaerah, sementara perbedaan IPM, kemiskinan, elektrifikasi, dan struktur ekonomi menunjukkan bahwa kemajuan tidak hadir dalam satu wajah. Pada akhirnya, pertumbuhan baru benar-benar menjadi kemajuan bersama ketika manfaat dan kesempatan dapat dirasakan oleh lebih banyak wilayah.
+              <strong>Melampaui ilusi angka agregat</strong>, pembangunan Indonesia bergerak dengan ritme yang berbeda di setiap wilayah. Arus migrasi memperlihatkan keterhubungan antardaerah, sementara perbedaan IPM, kemiskinan, elektrifikasi, dan struktur ekonomi menunjukkan bahwa kemajuan tidak hadir dalam satu wajah. Pada akhirnya, pertumbuhan baru benar-benar menjadi kemajuan bersama ketika manfaat dan kesempatan dapat dirasakan oleh lebih banyak wilayah.
               <span aria-hidden="true" className="closing-quote-mark closing-quote-mark--close">”</span>
             </blockquote>
           </div>
