@@ -55,7 +55,15 @@ function formatMatrixLabel(label: string) {
 
 export default function ScatterMatrix({ data, variables, highlighted, focusPair = null, width = 720 }: Props) {
   const ref = useRef<SVGSVGElement>(null);
+  const [mobileLayout, setMobileLayout] = useState(() => window.matchMedia('(max-width: 768px)').matches);
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 768px)');
+    const updateLayout = () => setMobileLayout(media.matches);
+    media.addEventListener('change', updateLayout);
+    return () => media.removeEventListener('change', updateLayout);
+  }, []);
 
   useEffect(() => {
     const svg = d3.select(ref.current);
@@ -264,6 +272,7 @@ export default function ScatterMatrix({ data, variables, highlighted, focusPair 
         ref={ref}
         width={squareSize}
         height={matrixHeight}
+        viewBox={mobileLayout ? `0 0 ${squareSize} ${matrixHeight}` : undefined}
         className="d3-chart block h-auto w-full"
         style={{ maxWidth: squareSize, overflow: 'visible', margin: '0 auto' }}
       />

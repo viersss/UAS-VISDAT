@@ -31,15 +31,51 @@ interface TooltipData {
 
 export default function PCAScatter({ points, summary, width = 760, height = 520 }: Props) {
   const ref = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [responsiveSize, setResponsiveSize] = useState<{ width: number; mobile: boolean }>({
+    width,
+    mobile: false,
+  });
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateSize = () => {
+      const mobile = window.matchMedia('(max-width: 768px)').matches;
+      setResponsiveSize({
+        width: mobile ? container.getBoundingClientRect().width : width,
+        mobile,
+      });
+    };
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(container);
+    window.addEventListener('resize', updateSize);
+    updateSize();
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateSize);
+    };
+  }, [width]);
+
+  const chartWidth = responsiveSize.mobile ? Math.max(280, responsiveSize.width) : width;
+  const plotSize = chartWidth - 68;
+  const legendRows = Math.ceil(Object.keys(PULAU_COLORS).length / 2);
+  const chartHeight = responsiveSize.mobile
+    ? 30 + plotSize + 50 + 26 + legendRows * 22 + 8
+    : height;
 
   useEffect(() => {
     const svg = d3.select(ref.current);
     svg.selectAll('*').remove();
 
-    const margin = { top: 40, right: 216, bottom: 60, left: 68 };
-    const innerW = width - margin.left - margin.right;
-    const innerH = height - margin.top - margin.bottom;
+    const margin = responsiveSize.mobile
+      ? { top: 30, right: 18, bottom: 54, left: 50 }
+      : { top: 40, right: 216, bottom: 60, left: 68 };
+    const innerW = chartWidth - margin.left - margin.right;
+    const innerH = responsiveSize.mobile ? innerW : chartHeight - margin.top - margin.bottom;
 
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
@@ -261,12 +297,13 @@ export default function PCAScatter({ points, summary, width = 760, height = 520 
     }
 
     // Legend panel
-    const legendW = 180;
-    const itemH = 26;
-    const headerH = 34;
+    const legendW = responsiveSize.mobile ? chartWidth - 32 : 180;
+    const itemH = responsiveSize.mobile ? 22 : 26;
+    const headerH = responsiveSize.mobile ? 26 : 34;
     const pulauList = Object.keys(PULAU_COLORS);
-    const legendH = headerH + pulauList.length * itemH + 8;
-    const legendX = width - legendW - 14;
+    const legendH = headerH + (responsiveSize.mobile ? legendRows : pulauList.length) * itemH + 8;
+    const legendX = responsiveSize.mobile ? 16 : chartWidth - legendW - 14;
+    const legendY = responsiveSize.mobile ? margin.top + innerH + 48 : margin.top + 6;
 
     const pulauCounts = points.reduce((acc, p) => {
       acc[p.pulau] = (acc[p.pulau] || 0) + 1;
@@ -275,7 +312,7 @@ export default function PCAScatter({ points, summary, width = 760, height = 520 
 
     const legend = svg.append('g')
       .attr('class', 'chart-legend')
-      .attr('transform', `translate(${legendX}, ${margin.top + 6})`);
+      .attr('transform', `translate(${legendX}, ${legendY})`);
 
     // Legend background card
     legend.append('rect')
@@ -300,15 +337,18 @@ export default function PCAScatter({ points, summary, width = 760, height = 520 
     // Rows
     pulauList.forEach((pulau, i) => {
       const count = pulauCounts[pulau] || 0;
-      const rowY = headerH + i * itemH + 2;
+      const mobileColumnWidth = (legendW - 16) / 2;
+      const mobileColumn = i % 2;
+      const mobileRow = Math.floor(i / 2);
+      const rowY = headerH + (responsiveSize.mobile ? mobileRow : i) * itemH + 2;
 
       const row = legend.append('g')
-        .attr('transform', `translate(8, ${rowY})`)
+        .attr('transform', `translate(${responsiveSize.mobile ? 8 + mobileColumn * mobileColumnWidth : 8}, ${rowY})`)
         .style('cursor', 'pointer');
 
       // Row hover target / background pill
       const rowBg = row.append('rect')
-        .attr('width', legendW - 16)
+        .attr('width', responsiveSize.mobile ? mobileColumnWidth - 4 : legendW - 16)
         .attr('height', itemH - 2)
         .attr('rx', 6)
         .attr('fill', 'transparent')
@@ -329,19 +369,19 @@ export default function PCAScatter({ points, summary, width = 760, height = 520 
         .attr('y', (itemH - 2) / 2)
         .attr('dominant-baseline', 'central')
         .style('font-family', 'inherit')
-        .style('font-size', '11.5px')
+        .style('font-size', responsiveSize.mobile ? '10px' : '11.5px')
         .style('font-weight', '500')
         .style('fill', '#334155')
         .text(pulau);
 
       // Count badge
       row.append('text')
-        .attr('x', legendW - 24)
+        .attr('x', responsiveSize.mobile ? mobileColumnWidth - 12 : legendW - 24)
         .attr('y', (itemH - 2) / 2)
         .attr('text-anchor', 'end')
         .attr('dominant-baseline', 'central')
         .style('font-family', 'inherit')
-        .style('font-size', '10.5px')
+        .style('font-size', responsiveSize.mobile ? '9.5px' : '10.5px')
         .style('font-weight', '600')
         .style('fill', '#94a3b8')
         .text(count);
@@ -362,23 +402,23 @@ export default function PCAScatter({ points, summary, width = 760, height = 520 
         });
     });
 
-  }, [points, summary, width, height]);
+  }, [points, summary, chartWidth, chartHeight, responsiveSize.mobile, legendRows]);
 
   return (
-    <div className="relative w-full">
+    <div ref={containerRef} className="pca-chart relative w-full">
       <svg
         ref={ref}
-        viewBox={`0 0 ${width} ${height}`}
-        width={width}
-        height={height}
+        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+        width={chartWidth}
+        height={chartHeight}
         className="d3-chart block w-full h-auto"
-        style={{ maxWidth: width, overflow: 'visible' }}
+        style={{ maxWidth: chartWidth, overflow: 'visible' }}
       />
       {tooltip && (
         <div
           className="map-tooltip visible"
           style={{
-            left: Math.min(tooltip.x, width - 200),
+            left: Math.min(tooltip.x, chartWidth - 200),
             top: Math.max(tooltip.y, 8),
             minWidth: 170,
           }}

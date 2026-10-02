@@ -4,9 +4,8 @@ Webstory interaktif satu halaman untuk membaca perbedaan indikator pembangunan a
 
 | Informasi | Detail |
 | --- | --- |
-| Repository | [viersss/UAS-VISDAT](https://github.com/viersss/UAS-VISDAT) |
-| Live demo | Tidak ditemukan URL demo yang dapat diverifikasi di repository |
-| Lisensi | Tidak ada file lisensi di repository |
+| Repository | [Source Code Webstory](https://s.stis.ac.id/Code_UasVisdat) |
+| URL Live  | [Webstory](https://s.stis.ac.id/Webstory_UASVisdat) |
 
 ## Latar belakang dan tujuan
 
@@ -21,9 +20,9 @@ Halaman tidak menggunakan router aplikasi. Navigasi berupa tombol yang menggulir
 | Urutan | Bagian | Isi |
 | --- | --- | --- |
 | Pembuka | Hero dan ringkasan nasional | Judul, pengantar, label ringkas, dan kartu metrik yang dihitung dari data provinsi |
-| Bab 1 — Multivariat | Pola indikator pembangunan | PCA scatter, parallel coordinates, scatter matrix, sorotan provinsi, dan korelasi |
-| Bab 2 — Migrasi | Arus migrasi antarprovinsi | Filter asal/tujuan, ringkasan rute setelah filter, serta Sankey atau Flowmap |
-| Bab 3 — Ekonomi | Struktur nilai ekonomi | Bar kontribusi sektor dan pilihan tampilan Treemap atau Sunburst |
+| Bab 1 "Multivariat" | Pola indikator pembangunan | PCA scatter, parallel coordinates, scatter matrix, sorotan provinsi, dan korelasi |
+| Bab 2 "Migrasi" | Arus migrasi antarprovinsi | Filter asal/tujuan, ringkasan rute setelah filter, serta Sankey atau Flowmap |
+| Bab 3 "Ekonomi" | Struktur nilai ekonomi | Bar kontribusi sektor dan pilihan tampilan Treemap atau Sunburst |
 | Penutup | Epilog | Ringkasan naratif tentang indikator, migrasi, dan konsentrasi nilai dalam data |
 
 Komponen bab menampilkan judul, subtitle, narasi, konteks, dan isi visual. Bagian bab menggunakan efek reveal saat masuk ke viewport; gerak parallax dan beberapa animasi menghormati preferensi `prefers-reduced-motion`.

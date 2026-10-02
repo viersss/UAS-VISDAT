@@ -373,7 +373,7 @@ export default function App() {
             </>
           }
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-6">
+          <div className="story-highlights grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-5 sm:mb-6">
             {chapterOneHighlights.map(item => (
               <div key={item.label} className="story-stat-card story-stat-card--development">
                 <div className="story-stat-label">{item.label}</div>
@@ -499,28 +499,37 @@ export default function App() {
               </div>
 
               <div className="flex h-full flex-col rounded-xl border border-line bg-white p-4 sm:p-6 shadow-sm">
-                <div className="overflow-x-auto min-h-[420px] flex-1">
-                  {pcaTab === 'pca' && (
-                    <PCAScatter points={pcaResult.points} summary={pcaResult.summary} width={920} height={560} />
-                  )}
-                  {pcaTab === 'parallel' && (
-                    <ParallelCoordinates
-                      data={PROVINCE_DATA}
-                      variables={[...INDICATOR_KEYS]}
-                      highlighted={highlighted}
-                      width={920}
-                      height={460}
-                    />
-                  )}
-                  {pcaTab === 'matrix' && (
-                    <ScatterMatrix
-                      data={PROVINCE_DATA}
-                      variables={MATRIX_VARIABLES}
-                      highlighted={highlighted}
-                      focusPair={focusPair}
-                      width={920}
-                    />
-                  )}
+                <div className="story-analytic-chart min-h-[360px] flex-1">
+                  <div className={`story-chart-scroll${pcaTab === 'pca' ? '' : ' story-chart-scroll--wide'}`}>
+                    {pcaTab !== 'pca' && (
+                      <p className="story-chart-scroll-hint">
+                        Geser horizontal untuk melihat detail grafik <span aria-hidden="true">→</span>
+                      </p>
+                    )}
+                    <div className={pcaTab === 'pca' ? '' : 'story-chart-min-width'}>
+                      {pcaTab === 'pca' && (
+                        <PCAScatter points={pcaResult.points} summary={pcaResult.summary} width={920} height={560} />
+                      )}
+                      {pcaTab === 'parallel' && (
+                        <ParallelCoordinates
+                          data={PROVINCE_DATA}
+                          variables={[...INDICATOR_KEYS]}
+                          highlighted={highlighted}
+                          width={920}
+                          height={460}
+                        />
+                      )}
+                      {pcaTab === 'matrix' && (
+                        <ScatterMatrix
+                          data={PROVINCE_DATA}
+                          variables={MATRIX_VARIABLES}
+                          highlighted={highlighted}
+                          focusPair={focusPair}
+                          width={920}
+                        />
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {pcaTab === 'pca' && (
@@ -584,7 +593,7 @@ export default function App() {
             </>
           }
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-6">
+          <div className="story-highlights grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-5 sm:mb-6">
             {chapterTwoHighlights.map(item => (
               <div key={item.label} className="story-stat-card story-stat-card--mobility">
                 <div className="story-stat-label">{item.label}</div>
@@ -641,11 +650,11 @@ export default function App() {
                   <div role="alert" className="flex min-h-40 items-center justify-center text-sm text-warm-deep">Data migrasi gagal dimuat: {migrationError}</div>
                 ) : migrationDataset ? (
                   migrationChartsVisible ? (
-                    <Suspense fallback={<div className="flex min-h-[1680px] items-start justify-center pt-12 text-sm text-ink-muted">Memuat visualisasi migrasi…</div>}>
+                    <Suspense fallback={<div className="flex min-h-[560px] items-start justify-center pt-12 text-sm text-ink-muted sm:min-h-[820px]">Memuat visualisasi migrasi…</div>}>
                       <MigrationFlowCharts edges={filteredMigrationEdges} provinces={migrationDataset.provinces} />
                     </Suspense>
                   ) : (
-                    <div className="flex min-h-[1680px] items-start justify-center pt-12 text-sm text-ink-muted">Visualisasi migrasi akan dimuat saat section mendekati layar.</div>
+                    <div className="flex min-h-[560px] items-start justify-center pt-12 text-sm text-ink-muted sm:min-h-[820px]">Visualisasi migrasi akan dimuat saat section mendekati layar.</div>
                   )
                 ) : (
                   <div className="flex min-h-40 items-center justify-center text-sm text-ink-muted">Membaca workbook migrasi…</div>
@@ -694,7 +703,7 @@ export default function App() {
             </>
           }
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-14 lg:mb-20">
+          <div className="story-highlights grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 mb-8 sm:mb-14 lg:mb-20">
             {chapterThreeHighlights.map(item => (
               <div key={item.label} className="story-stat-card story-stat-card--economy">
                 <div className="story-stat-label">{item.label}</div>
@@ -704,7 +713,7 @@ export default function App() {
             ))}
           </div>
 
-          <div className="relative mb-28 lg:mb-32" ref={sectorChartRef} onMouseLeave={() => setSectorTooltip(null)}>
+          <div className="story-sector-section relative mb-16 lg:mb-32" ref={sectorChartRef} onMouseLeave={() => setSectorTooltip(null)}>
             <div className="grid gap-8 lg:gap-10 lg:grid-cols-[0.7fr_1.3fr] lg:items-center">
               <div className="rounded-2xl border border-line bg-canvas p-4 text-sm leading-6 text-ink-soft shadow-sm">
                 <p className="font-semibold uppercase tracking-[0.12em] text-[10px] text-ink-muted">Interpretasi</p>
@@ -790,7 +799,7 @@ export default function App() {
             )}
           </div>
 
-          <div className="mt-16 sm:mt-28 mb-4 flex items-center justify-between gap-3 flex-wrap">
+          <div className="mt-10 sm:mt-28 mb-4 flex items-center justify-between gap-3 flex-wrap">
             <h3 className="text-base font-semibold text-ink">
               {hierarchyTab === 'treemap' ? 'Treemap "Proporsi Nilai Ekonomi"' : 'Sunburst "Struktur Radial"'}
             </h3>
@@ -867,7 +876,7 @@ export default function App() {
             </h3>
           </div>
 
-          <div className="grid gap-8 lg:gap-6 lg:grid-cols-3">
+          <div className="epilog-insights grid gap-8 lg:gap-6 lg:grid-cols-3">
             <article className="rounded-2xl border border-line bg-white p-6 shadow-sm">
               <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">01</div>
               <h4 className="text-xl font-bold text-ink">IPM lebih tinggi berkaitan dengan kemiskinan lebih rendah.</h4>
@@ -893,7 +902,7 @@ export default function App() {
             </article>
           </div>
 
-          <div className="mt-36 mb-20">
+          <div className="story-ending-quote mt-36 mb-20">
             <blockquote className="closing-quote mx-auto max-w-3xl border-y border-accent/20 py-12 text-center font-serif text-xl italic leading-relaxed text-accent-deep sm:text-2xl">
               <span aria-hidden="true" className="closing-quote-mark closing-quote-mark--open">“</span>
               Di balik angka rata-rata nasional, pembangunan Indonesia bergerak dengan ritme yang berbeda di setiap wilayah. Arus migrasi memperlihatkan keterhubungan antardaerah, sementara perbedaan IPM, kemiskinan, elektrifikasi, dan struktur ekonomi menunjukkan bahwa kemajuan tidak hadir dalam satu wajah. Pada akhirnya, pertumbuhan baru benar-benar menjadi kemajuan bersama ketika manfaat dan kesempatan dapat dirasakan oleh lebih banyak wilayah.

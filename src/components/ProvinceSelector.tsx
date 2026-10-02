@@ -30,7 +30,7 @@ export default function ProvinceSelector({ provinces, selected, onToggle, onClea
         {selectedList.length > 0 && (
           <button
             onClick={onClear}
-            className="text-xs text-ink-muted hover:text-warm transition-colors flex items-center gap-1"
+            className="province-selector-clear text-xs text-ink-muted hover:text-warm transition-colors flex items-center gap-1"
           >
             <X size={14} /> Hapus
           </button>
@@ -38,7 +38,7 @@ export default function ProvinceSelector({ provinces, selected, onToggle, onClea
       </div>
 
       {selectedList.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-4">
+        <div className="province-selected-chips flex flex-wrap gap-1.5 mb-4">
           {selectedList.map(p => (
             <button
               key={p}
@@ -59,18 +59,18 @@ export default function ProvinceSelector({ provinces, selected, onToggle, onClea
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Cari provinsi…"
-          className="w-full text-sm bg-canvas border border-line rounded-lg pl-9 pr-3 py-2 text-ink placeholder:text-ink-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-colors"
+          className="province-search w-full text-sm bg-canvas border border-line rounded-lg pl-9 pr-3 py-2 text-ink placeholder:text-ink-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-colors"
         />
       </div>
 
-      <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+      <div className="province-chips flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
         {filtered.map(p => {
           const isOn = selected.has(p);
           return (
             <button
               key={p}
               onClick={() => onToggle(p)}
-              className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+              className={`province-chip text-xs px-2.5 py-1 rounded-full border transition-colors ${
                 isOn
                   ? 'bg-accent text-white border-accent font-medium'
                   : 'bg-white text-ink-soft border-line hover:border-accent hover:text-accent-deep'

@@ -78,8 +78,9 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
     const updateSize = () => {
       const rect = wrapRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const nextWidth = Math.max(360, Math.min(rect.width || width, width));
-      const nextHeight = Math.min(560, Math.max(420, nextWidth * 0.72));
+      const mobile = window.matchMedia('(max-width: 768px)').matches;
+      const nextWidth = Math.max(mobile ? 280 : 360, Math.min(rect.width || width, width));
+      const nextHeight = Math.min(560, Math.max(mobile ? 320 : 420, nextWidth * 0.72));
       setChartSize({ width: nextWidth, height: nextHeight });
     };
 

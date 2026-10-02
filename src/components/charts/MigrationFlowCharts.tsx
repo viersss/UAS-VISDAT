@@ -45,9 +45,13 @@ export default function MigrationFlowCharts({ edges, provinces }: Props) {
     const visibleEdges = routeLimit === 'all' ? rankedEdges : rankedEdges.slice(0, routeLimit);
     const totalMigrants = edges.reduce((sum, edge) => sum + edge.Jumlah_Migran, 0);
     const visibleMigrants = visibleEdges.reduce((sum, edge) => sum + edge.Jumlah_Migran, 0);
-    const compactLayout = chartWidth < 640;
+    const compactLayout = window.matchMedia('(max-width: 768px)').matches;
     const labelWidth = compactLayout ? Math.max(56, Math.min(92, chartWidth * 0.28)) : 140;
     const sideMargin = compactLayout ? labelWidth + 12 : 150;
+    const originProvinces = new Set(visibleEdges.map(edge => edge.Prov_Asal));
+    const destinationProvinces = new Set(visibleEdges.map(edge => edge.Prov_Tujuan));
+    const displayedOrigins = compactLayout ? provinces.filter(province => originProvinces.has(province)) : provinces;
+    const displayedDestinations = compactLayout ? provinces.filter(province => destinationProvinces.has(province)) : provinces;
 
     const sankeyOption: EChartsOption = {
       animationDuration: 450,
@@ -82,13 +86,13 @@ export default function MigrationFlowCharts({ edges, provinces }: Props) {
         draggable: false,
         emphasis: { focus: 'adjacency' },
         data: [
-          ...provinces.map(province => ({
+          ...displayedOrigins.map(province => ({
             name: `asal:${province}`,
             depth: 0,
             itemStyle: { color: '#1d6d7b' },
             label: { position: 'left' as const, formatter: province },
           })),
-          ...provinces.map(province => ({
+          ...displayedDestinations.map(province => ({
             name: `tujuan:${province}`,
             depth: 1,
             itemStyle: { color: '#d98d55' },
@@ -172,7 +176,7 @@ export default function MigrationFlowCharts({ edges, provinces }: Props) {
         <div className="flex min-h-40 items-center justify-center text-sm text-ink-muted">Tidak ada arus untuk kombinasi filter ini.</div>
       ) : visualization === 'sankey' ? (
         <div ref={chartContainerRef} className="w-full min-w-0">
-          <ReactEChartsCore echarts={echartsCore} option={sankeyOption} notMerge style={{ width: '100%', height: 820 }} />
+          <ReactEChartsCore echarts={echartsCore} option={sankeyOption} notMerge style={{ width: '100%', height: 'clamp(680px, 145vw, 820px)' }} />
         </div>
       ) : (
         <MigrationFlowMap edges={visibleEdges} />

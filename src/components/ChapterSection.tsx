@@ -18,7 +18,7 @@ export default function ChapterSection({
   children,
 }: ChapterSectionProps) {
   return (
-    <section data-reveal data-parallax className="max-w-[1360px] mx-auto px-6 sm:px-8 py-14 sm:py-20">
+    <section aria-label={`${chapter}: ${title}`} data-reveal data-parallax className="story-chapter max-w-[1360px] mx-auto px-6 sm:px-8 py-14 sm:py-20">
       <div className="mb-10 sm:mb-14">
         <h2 className="max-w-full text-3xl font-bold tracking-[-0.03em] text-ink leading-tight sm:text-4xl">
           {title}
@@ -35,7 +35,7 @@ export default function ChapterSection({
             </p>
           </div>
           <div className="lg:col-span-2 border-l-[3px] border-warm/80 pl-5">
-            <p className="text-sm text-ink-muted leading-[1.75] max-w-[48ch]">
+            <p className="story-context text-sm text-ink-muted leading-[1.75] max-w-[48ch]">
               {context}
             </p>
           </div>

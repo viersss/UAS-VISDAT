@@ -61,8 +61,9 @@ export default function Sunburst({ data, width = 720, height = 560 }: Props) {
     const updateSize = () => {
       const rect = wrapRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const nextWidth = Math.max(340, Math.min(rect.width || width, width));
-      const nextHeight = Math.min(560, Math.max(420, nextWidth * 0.8));
+      const mobile = window.matchMedia('(max-width: 768px)').matches;
+      const nextWidth = Math.max(mobile ? 280 : 340, Math.min(rect.width || width, width));
+      const nextHeight = Math.min(560, Math.max(mobile ? 320 : 420, nextWidth * 0.8));
       setChartSize({ width: nextWidth, height: nextHeight });
     };
 
