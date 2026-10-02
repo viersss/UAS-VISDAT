@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 
 interface NavItem {
   id: string;
@@ -12,7 +12,8 @@ interface ProgressBarProps {
 export default function ProgressBar({ items }: ProgressBarProps) {
   const [active, setActive] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
+  const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null);
+  const [ready, setReady] = useState(false);
   const navRef = useRef<HTMLElement | null>(null);
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -37,29 +38,45 @@ export default function ProgressBar({ items }: ProgressBarProps) {
     return () => window.removeEventListener('scroll', onScroll);
   }, [items]);
 
-  useLayoutEffect(() => {
-    const updateIndicator = () => {
-      const nav = navRef.current;
-      const button = buttonRefs.current[active];
-      if (!nav || !button) return;
-      setIndicator({ left: button.offsetLeft, width: button.offsetWidth });
-    };
+  const measureIndicator = useCallback(() => {
+    const nav = navRef.current;
+    const button = buttonRefs.current[active];
+    if (!nav || !button) return;
+    setIndicator({ left: button.offsetLeft, width: button.offsetWidth });
+  }, [active]);
 
-    updateIndicator();
-    const observer = new ResizeObserver(updateIndicator);
+  // Initial mount: measure after layout is fully settled, then mark ready
+  useLayoutEffect(() => {
+    // Use double-rAF to ensure fonts and layout are fully resolved
+    const rafId = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        measureIndicator();
+        setReady(true);
+      });
+    });
+    return () => cancelAnimationFrame(rafId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Subsequent updates: re-measure when active tab or layout changes
+  useLayoutEffect(() => {
+    measureIndicator();
+    const observer = new ResizeObserver(measureIndicator);
     if (navRef.current) observer.observe(navRef.current);
     return () => observer.disconnect();
-  }, [active, items.length]);
+  }, [active, items.length, measureIndicator]);
 
   return (
     <div className="story-nav-shell fixed left-1/2 top-3 z-50 w-[calc(100%-1rem)] max-w-[980px] -translate-x-1/2 overflow-hidden rounded-full">
       <div className="relative flex h-[54px] items-center justify-center px-1.5 sm:h-[58px] sm:px-2">
         <nav ref={navRef} aria-label="Navigasi cerita" className="relative flex w-full items-center justify-center gap-0.5 overflow-x-auto">
+          {indicator && (
           <span
             aria-hidden="true"
-            className="story-nav-indicator"
+            className={`story-nav-indicator${ready ? ' story-nav-indicator--ready' : ''}`}
             style={{ left: indicator.left, width: indicator.width }}
           />
+          )}
           {items.map((item, i) => (
             <button
               key={item.id}
