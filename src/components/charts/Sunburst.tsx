@@ -111,6 +111,7 @@ export default function Sunburst({ data, width = 720, height = 560 }: Props) {
     const hierarchy = d3.hierarchy(targetNodeObj)
       .sum(d => d.value || 0)
       .sort((a, b) => (b.value || 0) - (a.value || 0));
+    const terminalDetail = !targetNodeObj.children && targetNodeObj.value !== undefined;
 
     const radius = Math.min(chartSize.width, chartSize.height) / 2 - 20;
     const innerRadius = 48;
@@ -141,6 +142,11 @@ export default function Sunburst({ data, width = 720, height = 560 }: Props) {
     const centerGroup = g.append('g').attr('class', 'center-layer').style('pointer-events', 'none');
 
     const allNodes = hierarchy.descendants().filter(d => d.depth > 0);
+    const isDrillable = (node: d3.HierarchyNode<TreeNode>) => Boolean(node.children || node.data.value !== undefined);
+    const pathForNode = (node: d3.HierarchyNode<TreeNode>) => [
+      ...activePath,
+      ...node.ancestors().reverse().slice(1).map(ancestor => ancestor.data.name),
+    ];
 
     const paths = slicesGroup.selectAll('path')
       .data(allNodes)
@@ -156,20 +162,47 @@ export default function Sunburst({ data, width = 720, height = 560 }: Props) {
       })
       .attr('stroke', '#fff')
       .attr('stroke-width', d => (d.depth === 1 && activePath.length === 0) ? 1.2 : 0.6)
-      .style('cursor', d => d.children ? 'pointer' : 'default');
+      .attr('role', d => isDrillable(d) ? 'button' : null)
+      .attr('tabindex', d => isDrillable(d) ? 0 : null)
+      .attr('aria-label', d => d.children
+        ? `Buka ${pathForNode(d).join(' lalu ')}`
+        : d.data.value !== undefined ? `Lihat rincian ${pathForNode(d).join(' lalu ')}` : null)
+      .style('cursor', d => isDrillable(d) ? 'pointer' : 'default');
+
+    paths.filter(isDrillable)
+      .append('title')
+      .text(d => d.children ? `Klik untuk membuka ${d.data.name}` : `Klik untuk melihat nilai ${d.data.name}`);
 
     paths
       .on('click', (event, d) => {
-        if (d.children) {
-          setActivePath([...activePath, d.data.name]);
+        if (isDrillable(d)) {
+          setActivePath(pathForNode(d));
           setHovered(null);
         }
+      })
+      .on('keydown', (event, d) => {
+        if (isDrillable(d) && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault();
+          setActivePath(pathForNode(d));
+          setHovered(null);
+        }
+      })
+      .on('focus', function (_, d) {
+        if (isDrillable(d)) d3.select(this).raise().attr('stroke', '#132b3d').attr('stroke-width', 2).attr('opacity', 1);
+      })
+      .on('blur', function (_, d) {
+        d3.select(this)
+          .attr('stroke', '#fff')
+          .attr('stroke-width', (d.depth === 1 && activePath.length === 0) ? 1.2 : 0.6)
+          .attr('opacity', null);
       })
       .on('mouseenter', function (event, d) {
         d3.select(this)
           .raise()
           .transition().duration(120)
           .attr('d', arcGenExpanded as unknown as (node: unknown) => string)
+          .attr('stroke', '#132b3d')
+          .attr('stroke-width', d.children ? 1.8 : 1.2)
           .attr('opacity', 1);
 
         const [x, y] = d3.pointer(event, wrapRef.current);
@@ -182,23 +215,40 @@ export default function Sunburst({ data, width = 720, height = 560 }: Props) {
           depth: d.depth + activePath.length,
         });
 
-        // Add title for drilldown
-        if (d.children) {
-           d3.select(this).append('title').text(`Klik untuk drill-down ke ${d.data.name}`);
-        }
       })
       .on('mousemove', (event) => {
         const [x, y] = d3.pointer(event, wrapRef.current);
         setHovered(prev => prev ? { ...prev, x: x + 14, y: y + 14 } : null);
       })
-      .on('mouseleave', function () {
+      .on('mouseleave', function (_, d) {
+        const baseStrokeWidth = d.depth === 1 && activePath.length === 0 ? 1.2 : 0.6;
         d3.select(this)
           .transition().duration(120)
           .attr('d', arcGen as unknown as (node: unknown) => string)
+          .attr('stroke', '#fff')
+          .attr('stroke-width', baseStrokeWidth)
           .attr('opacity', null);
-        d3.select(this).select('title').remove();
         setHovered(null);
       });
+
+    if (terminalDetail) {
+      const detailColor = SECTOR_COLORS[targetNodeObj.sectorName] || '#6b8294';
+      const detailArc = d3.arc()
+        .innerRadius(innerRadius + 7)
+        .outerRadius(radius - 5)
+        .startAngle(0)
+        .endAngle(2 * Math.PI - 0.006);
+
+      slicesGroup.append('path')
+        .attr('d', detailArc({} as d3.DefaultArcObject) ?? '')
+        .attr('fill', detailColor)
+        .attr('fill-opacity', 0.48)
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 1.2)
+        .style('pointer-events', 'none')
+        .append('title')
+        .text(`${targetNodeObj.name}: ${targetNodeObj.value?.toLocaleString('id-ID')} T`);
+    }
 
     // Sector labels (only show at top level or if arc is wide enough)
     const labelNodes = hierarchy.descendants().filter(d => d.depth === 1) as d3.HierarchyRectangularNode<TreeNode>[];
@@ -258,38 +308,80 @@ export default function Sunburst({ data, width = 720, height = 560 }: Props) {
       .attr('stroke', '#e2e8f0')
       .attr('stroke-width', 1)
       .style('cursor', activePath.length > 0 ? 'pointer' : 'default')
+      .style('pointer-events', activePath.length > 0 ? 'all' : 'none')
+      .attr('role', activePath.length > 0 ? 'button' : null)
+      .attr('tabindex', activePath.length > 0 ? 0 : null)
+      .attr('aria-label', activePath.length > 0 ? `Kembali dari ${activePath[activePath.length - 1]}` : null)
       .on('click', () => {
         if (activePath.length > 0) {
-          setActivePath(activePath.slice(0, -1)); // zoom out one level
+          setActivePath(activePath.slice(0, -1));
           setHovered(null);
         }
       });
+
+    centerGroup.select('circle').on('keydown', event => {
+      if (activePath.length > 0 && (event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault();
+        setActivePath(activePath.slice(0, -1));
+        setHovered(null);
+      }
+    });
 
     if (activePath.length > 0) {
       centerGroup.append('title').text('Klik untuk Zoom Out');
     }
 
-    centerGroup.append('text')
-      .attr('text-anchor', 'middle')
-      .attr('dy', activePath.length > 0 ? '0em' : '-0.15em')
-      .style('font-family', 'inherit')
-      .style('font-size', activePath.length > 0 ? '11px' : '14px')
-      .style('font-weight', '800')
-      .style('fill', '#14283b')
-      .style('pointer-events', 'none')
-      .text(activePath.length > 0 ? (activePath[activePath.length-1].length > 10 ? activePath[activePath.length-1].slice(0, 8) + '…' : activePath[activePath.length-1]) : 'PDB');
-
-    if (activePath.length === 0) {
+    if (terminalDetail) {
       centerGroup.append('text')
         .attr('text-anchor', 'middle')
-        .attr('dy', '1.1em')
+        .attr('dy', '-0.45em')
         .style('font-family', 'inherit')
-        .style('font-size', '8.5px')
-        .style('fill', '#6b8294')
-        .style('text-transform', 'uppercase')
-        .style('letter-spacing', '0.1em')
+        .style('font-size', targetNodeObj.name.length > 11 ? '8px' : '10px')
+        .style('font-weight', '700')
+        .style('fill', '#14283b')
         .style('pointer-events', 'none')
-        .text('Nasional');
+        .text(targetNodeObj.name.length > 14 ? `${targetNodeObj.name.slice(0, 12)}…` : targetNodeObj.name);
+
+      centerGroup.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '0.8em')
+        .style('font-family', 'inherit')
+        .style('font-size', '8px')
+        .style('fill', '#425b6d')
+        .style('pointer-events', 'none')
+        .text(`${(targetNodeObj.value || 0).toLocaleString('id-ID')} T`);
+
+      centerGroup.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', '2em')
+        .style('font-family', 'inherit')
+        .style('font-size', '7px')
+        .style('fill', '#6b8294')
+        .style('pointer-events', 'none')
+        .text(`${(targetNodeObj.kontribusi || 0).toFixed(2)}% PDB`);
+    } else {
+      centerGroup.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', activePath.length > 0 ? '0em' : '-0.15em')
+        .style('font-family', 'inherit')
+        .style('font-size', activePath.length > 0 ? '11px' : '14px')
+        .style('font-weight', '800')
+        .style('fill', '#14283b')
+        .style('pointer-events', 'none')
+        .text(activePath.length > 0 ? (activePath[activePath.length - 1].length > 10 ? `${activePath[activePath.length - 1].slice(0, 8)}…` : activePath[activePath.length - 1]) : 'PDB');
+
+      if (activePath.length === 0) {
+        centerGroup.append('text')
+          .attr('text-anchor', 'middle')
+          .attr('dy', '1.1em')
+          .style('font-family', 'inherit')
+          .style('font-size', '8.5px')
+          .style('fill', '#6b8294')
+          .style('text-transform', 'uppercase')
+          .style('letter-spacing', '0.1em')
+          .style('pointer-events', 'none')
+          .text('Nasional');
+      }
     }
 
   }, [chartSize.height, chartSize.width, data, activePath]);

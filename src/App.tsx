@@ -184,10 +184,10 @@ export default function App() {
     const miskinMean = d3.mean(PROVINCE_DATA, d => d.kemiskinan) ?? 0;
     const pendudukTotal = d3.sum(PROVINCE_DATA, d => d.penduduk) ?? 0;
     return [
-      { label: 'Total Penduduk', value: `${pendudukTotal.toFixed(0)} jt`, sub: '34 provinsi' },
-      { label: 'IPM Rata-rata', value: ipmMean.toFixed(1), sub: 'Nasional' },
-      { label: 'Rasio Gini', value: giniMean.toFixed(2), sub: 'Nasional' },
-      { label: 'Penduduk Miskin', value: `${miskinMean.toFixed(1)}%`, sub: 'Rata-rata' },
+      { label: 'Total Penduduk', value: `${pendudukTotal.toFixed(0)} jt`, sub: 'Tahun 2024' },
+      { label: 'IPM Rata-rata', value: ipmMean.toFixed(1), sub: 'Rata-rata antarprovinsi' },
+      { label: 'Rasio Gini', value: giniMean.toFixed(2), sub: 'Rata-rata antarprovinsi' },
+      { label: 'Kemiskinan Rata-rata', value: `${miskinMean.toFixed(1)}%`, sub: 'Rata-rata persentase tiap provinsi' },
       { label: 'Rentang IPM', value: `${(ipmMax - ipmMin).toFixed(1)}`, sub: `${ipmMin.toFixed(1)} – ${ipmMax.toFixed(1)}` },
     ];
   }, []);
@@ -276,13 +276,13 @@ export default function App() {
   const chapterOneHighlights = [
     {
       label: 'IPM tertinggi',
-      value: <>{topIPM.provinsi} &middot; <AnimatedNumber value={topIPM.ipm.toFixed(1)} /></>,
-      note: 'Provinsi dengan kualitas hidup paling tinggi',
+      value: <AnimatedNumber value={topIPM.ipm.toFixed(1)} />,
+      note: <><span className="story-stat-note-primary">{topIPM.provinsi}</span><span className="story-stat-note-detail">Provinsi dengan kualitas hidup paling tinggi</span></>,
     },
     {
       label: 'IPM terendah',
-      value: <>{bottomIPM.provinsi} &middot; <AnimatedNumber value={bottomIPM.ipm.toFixed(1)} /></>,
-      note: 'Batas bawah pembangunan manusia nasional',
+      value: <AnimatedNumber value={bottomIPM.ipm.toFixed(1)} />,
+      note: <><span className="story-stat-note-primary">{bottomIPM.provinsi}</span><span className="story-stat-note-detail">Batas bawah pembangunan manusia nasional</span></>,
     },
     {
       label: 'Korelasi paling kuat',
@@ -300,17 +300,19 @@ export default function App() {
     {
       label: 'Rute terbesar',
       value: migrationStats.topRoute
-        ? `${migrationStats.topRoute.Prov_Asal} → ${migrationStats.topRoute.Prov_Tujuan}`
+        ? `${migrationStats.topRoute.Jumlah_Migran.toLocaleString('id-ID')} jiwa`
         : 'Belum ada arus',
       note: migrationStats.topRoute
-        ? `${migrationStats.topRoute.Jumlah_Migran.toLocaleString('id-ID')} jiwa`
+        ? `${migrationStats.topRoute.Prov_Asal} → ${migrationStats.topRoute.Prov_Tujuan}`
         : 'Ubah filter untuk melihat rute',
     },
     {
       label: 'Tujuan arus terbesar',
-      value: migrationStats.topDestination?.province ?? 'Belum ada arus',
+      value: migrationStats.topDestination
+        ? `${migrationStats.topDestination.value.toLocaleString('id-ID')} jiwa`
+        : 'Belum ada arus',
       note: migrationStats.topDestination
-        ? `${migrationStats.topDestination.value.toLocaleString('id-ID')} jiwa · ${(migrationStats.topDestinationShare * 100).toFixed(1)}% dari arus terpilih`
+        ? `${migrationStats.topDestination.province} · ${(migrationStats.topDestinationShare * 100).toFixed(1)}% dari arus terpilih`
         : 'Ubah filter untuk melihat tujuan',
     },
   ];
@@ -318,13 +320,13 @@ export default function App() {
   const chapterThreeHighlights = [
     {
       label: 'Sektor terbesar',
-      value: `${sectorTotals[0].sektor}`,
-      note: <><AnimatedNumber value={((sectorTotals[0].nilai / totalPDB) * 100).toFixed(1)} />% dari total PDB</>,
+      value: <><AnimatedNumber value={((sectorTotals[0].nilai / totalPDB) * 100).toFixed(1)} />%</>,
+      note: `${sectorTotals[0].sektor} · dari total PDB`,
     },
     {
       label: 'Sektor kedua',
-      value: `${sectorTotals[1].sektor}`,
-      note: <><AnimatedNumber value={((sectorTotals[1].nilai / totalPDB) * 100).toFixed(1)} />% dari total PDB</>,
+      value: <><AnimatedNumber value={((sectorTotals[1].nilai / totalPDB) * 100).toFixed(1)} />%</>,
+      note: `${sectorTotals[1].sektor} · dari total PDB`,
     },
     {
       label: 'Pola ekonomi',
@@ -373,7 +375,7 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-6">
             {chapterOneHighlights.map(item => (
-              <div key={item.label} className="story-stat-card">
+              <div key={item.label} className="story-stat-card story-stat-card--development">
                 <div className="story-stat-label">{item.label}</div>
                 <div className="story-stat-value">{item.value}</div>
                 <div className="story-stat-note">{item.note}</div>
@@ -584,7 +586,7 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-6">
             {chapterTwoHighlights.map(item => (
-              <div key={item.label} className="story-stat-card">
+              <div key={item.label} className="story-stat-card story-stat-card--mobility">
                 <div className="story-stat-label">{item.label}</div>
                 <div className="story-stat-value">{item.value}</div>
                 <div className="story-stat-note">{item.note}</div>
@@ -694,7 +696,7 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-14 lg:mb-20">
             {chapterThreeHighlights.map(item => (
-              <div key={item.label} className="story-stat-card">
+              <div key={item.label} className="story-stat-card story-stat-card--economy">
                 <div className="story-stat-label">{item.label}</div>
                 <div className="story-stat-value">{item.value}</div>
                 <div className="story-stat-note">{item.note}</div>
@@ -892,10 +894,10 @@ PCA menunjukkan bahwa kondisi pembangunan antarprovinsi memiliki pola yang berbe
           </div>
 
           <div className="mt-36 mb-20">
-            <blockquote className="relative mx-auto max-w-4xl pl-0 text-justify text-[1.08rem] font-medium italic leading-[1.9] text-ink sm:text-[1.5rem]">
-              <span className="absolute -left-1 -top-8 text-[3.5rem] font-bold leading-none text-ink/10">“</span>
+            <blockquote className="closing-quote mx-auto max-w-3xl border-y border-accent/20 py-12 text-center font-serif text-xl italic leading-relaxed text-accent-deep sm:text-2xl">
+              <span aria-hidden="true" className="closing-quote-mark closing-quote-mark--open">“</span>
               Di balik angka rata-rata nasional, pembangunan Indonesia bergerak dengan ritme yang berbeda di setiap wilayah. Arus migrasi memperlihatkan keterhubungan antardaerah, sementara perbedaan IPM, kemiskinan, elektrifikasi, dan struktur ekonomi menunjukkan bahwa kemajuan tidak hadir dalam satu wajah. Pada akhirnya, pertumbuhan baru benar-benar menjadi kemajuan bersama ketika manfaat dan kesempatan dapat dirasakan oleh lebih banyak wilayah.
-              <span className="ml-1 text-[3.5rem] align-middle font-bold leading-none text-ink/10">”</span>
+              <span aria-hidden="true" className="closing-quote-mark closing-quote-mark--close">”</span>
             </blockquote>
           </div>
 

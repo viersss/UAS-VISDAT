@@ -20,6 +20,11 @@ const SECTOR_COLORS: Record<string, string> = {
   'Jasa Lainnya': '#5a7389',
 };
 
+const COMPACT_SECTOR_LABELS: Record<string, string> = {
+  'Jasa Penyediaan Akomodasi': 'Akomodasi',
+  'Pengadaan Listrik & Gas': 'Listrik & Gas',
+};
+
 interface TreeNode {
   name: string;
   children?: TreeNode[];
@@ -39,6 +44,27 @@ interface TooltipData {
   sector: string;
   subsektor?: string;
   depth: number;
+}
+
+function wrapHierarchyLabel(label: string, maxChars: number) {
+  const words = label.split(/\s+/);
+  const lines: string[] = [];
+  let current = '';
+
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length <= maxChars || !current) {
+      current = candidate;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+  }
+
+  if (current) lines.push(current);
+  if (lines.length <= 2) return lines;
+  const second = lines[1];
+  return [lines[0], `${second.slice(0, Math.max(1, maxChars - 1))}…`];
 }
 
 export default function Treemap({ data, width = 820, height = 560 }: Props) {
@@ -109,12 +135,10 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
       .sum(d => d.value || 0)
       .sort((a, b) => (b.value || 0) - (a.value || 0));
 
-    const hasChildrenWithChildren = hierarchy.children && hierarchy.children.some(c => c.children && c.children.length > 0);
-
     const treemap = d3.treemap<TreeNode>()
       .size([chartSize.width, chartSize.height])
       .paddingOuter(4)
-      .paddingTop(d => (d.depth === hierarchy.depth && hasChildrenWithChildren) ? 24 : 0)
+      .paddingTop(d => (d.depth === 1 && d.children) ? 28 : 0)
       .paddingInner(2)
       .round(true);
 
@@ -127,6 +151,8 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
     groups.forEach(node => {
       const sectorName = node.data.sectorName || node.data.name;
       const color = SECTOR_COLORS[sectorName] || '#6b8294';
+      const groupDepth = node.depth + activePath.length;
+      const groupLevel = groupDepth === 1 ? 'sektor' : 'subsektor';
 
       const rect = g.append('rect')
         .attr('x', node.x0).attr('y', node.y0)
@@ -134,12 +160,28 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
         .attr('fill', color).attr('opacity', 0.08)
         .attr('stroke', color).attr('stroke-width', 1.5)
         .attr('rx', 5)
-        .style('cursor', 'pointer');
+          .attr('role', 'button')
+          .attr('tabindex', 0)
+          .attr('aria-label', `Buka ${groupLevel} ${node.data.name}`)
+        .style('cursor', 'pointer')
+        .style('transition', 'opacity 0.15s ease, stroke-width 0.15s ease');
 
       rect
         .on('click', () => setActivePath([...activePath, node.data.name]))
+        .on('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setActivePath([...activePath, node.data.name]);
+          }
+        })
+        .on('focus', function () {
+          d3.select(this).attr('opacity', 0.18).attr('stroke-width', 2.6);
+        })
+        .on('blur', function () {
+          d3.select(this).attr('opacity', 0.08).attr('stroke-width', 1.5);
+        })
         .on('mouseenter', function (event) {
-          d3.select(this).attr('opacity', 0.16);
+          d3.select(this).attr('opacity', 0.18).attr('stroke-width', 2.6);
           const [x, y] = d3.pointer(event, wrapRef.current);
           const depth = node.depth + activePath.length;
           setHovered({
@@ -162,21 +204,53 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
           } : null);
         })
         .on('mouseleave', function () {
-          d3.select(this).attr('opacity', 0.08);
+          d3.select(this).attr('opacity', 0.08).attr('stroke-width', 1.5);
           setHovered(null);
         });
 
-      rect.append('title').text(`Klik untuk drill-down ke ${node.data.name}`);
+      rect.append('title').text(`Klik untuk membuka ${groupLevel} ${node.data.name}`);
 
-      const sLabel = node.data.name.length > 22 ? node.data.name.slice(0, 20) + '…' : node.data.name;
-      if (node.x1 - node.x0 > 65 && node.y1 - node.y0 > 30) {
+      const groupWidth = node.x1 - node.x0;
+      const groupHeight = node.y1 - node.y0;
+      if (groupWidth > 48 && groupHeight > 30) {
+        const fontSize = Math.max(7, Math.min(8.5, groupWidth / 16));
+        const labelLimit = Math.max(5, Math.floor((groupWidth - 30) / (fontSize * 0.58)));
+        const groupLabel = wrapHierarchyLabel(
+          COMPACT_SECTOR_LABELS[node.data.name] || node.data.name,
+          labelLimit
+        );
+        const label = g.append('text')
+          .attr('x', node.x0 + 8)
+          .attr('y', node.y0 + (groupLabel.length > 1 ? 11 : 18))
+          .style('font-size', `${fontSize}px`)
+          .style('font-weight', '800')
+          .style('fill', '#203744')
+          .style('paint-order', 'stroke')
+          .style('stroke', '#f5f3ee')
+          .style('stroke-width', '2.6px')
+          .style('stroke-linejoin', 'round')
+          .style('pointer-events', 'none');
+
+        groupLabel.forEach((line, index) => {
+          label.append('tspan')
+            .attr('x', node.x0 + 8)
+            .attr('dy', index === 0 ? 0 : 10)
+            .text(line.toLocaleUpperCase('id-ID'));
+        });
+
         g.append('text')
-          .attr('x', node.x0 + 8).attr('y', node.y0 + 17)
-          .style('font-size', '9.5px').style('font-weight', '800')
-          .style('fill', color).style('text-transform', 'uppercase')
-          .style('letter-spacing', '0.05em')
+          .attr('x', node.x1 - 11).attr('y', node.y0 + 15)
+          .attr('text-anchor', 'middle')
+          .style('font-size', '14px')
+          .style('font-weight', '700')
+          .style('fill', '#203744')
+          .style('paint-order', 'stroke')
+          .style('stroke', '#f5f3ee')
+          .style('stroke-width', '2.6px')
+          .style('stroke-linejoin', 'round')
+          .style('opacity', 0.8)
           .style('pointer-events', 'none')
-          .text(sLabel);
+          .text('›');
       }
     });
 
@@ -198,6 +272,22 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
         .attr('rx', 3)
         .style('cursor', 'pointer')
         .style('transition', 'opacity 0.15s ease, transform 0.15s ease');
+
+      const drillTarget = leaf.ancestors().find(ancestor => ancestor.depth === 1 && ancestor.children);
+      if (drillTarget) {
+        const drillLevel = drillTarget.depth + activePath.length === 1 ? 'sektor' : 'subsektor';
+        rect
+          .attr('role', 'button')
+          .attr('tabindex', 0)
+          .attr('aria-label', `Buka ${drillLevel} ${drillTarget.data.name} dari rincian ${leaf.data.name}`)
+          .on('click', () => setActivePath([...activePath, drillTarget.data.name]))
+          .on('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              setActivePath([...activePath, drillTarget.data.name]);
+            }
+          });
+      }
 
       rect
         .on('mouseenter', function (event) {
@@ -233,11 +323,15 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
           setHovered(null);
         });
 
-      if (w > 55 && h > 28) {
-        const labelText = leaf.data.name.length > 16 ? leaf.data.name.slice(0, 14) + '…' : leaf.data.name;
+      if (w > 40 && h > 19) {
+        const fontSize = Math.max(7, Math.min(9, Math.min(w / 7, h / 2.5)));
+        const labelLimit = Math.max(5, Math.floor((w - 12) / (fontSize * 0.58)));
+        const labelText = leaf.data.name.length > labelLimit
+          ? `${leaf.data.name.slice(0, Math.max(3, labelLimit - 1))}…`
+          : leaf.data.name;
         g.append('text')
-          .attr('x', leaf.x0 + 6).attr('y', leaf.y0 + h / 2 - (h > 36 ? 6 : 2))
-          .style('font-size', Math.max(8, Math.min(10, w / 7)) + 'px')
+          .attr('x', leaf.x0 + 6).attr('y', leaf.y0 + h / 2 - (h > 31 ? 5 : -3))
+          .style('font-size', `${fontSize}px`)
           .style('font-weight', '700')
           .style('fill', '#ffffff')
           .style('paint-order', 'stroke')
@@ -246,7 +340,7 @@ export default function Treemap({ data, width = 820, height = 560 }: Props) {
           .style('pointer-events', 'none')
           .text(labelText);
 
-        if (h > 36) {
+        if (h > 31 && w > 52) {
           g.append('text')
             .attr('x', leaf.x0 + 6).attr('y', leaf.y0 + h / 2 + 10)
             .style('font-size', Math.max(7.5, Math.min(9, w / 9)) + 'px')
