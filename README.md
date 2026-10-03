@@ -257,3 +257,11 @@ Layout menggunakan utility breakpoint Tailwind serta media query CSS. Kartu hero
 Repository ini tidak memuat `LICENSE`/`COPYING`; hak penggunaan dan distribusi kode maupun data tidak dapat ditentukan dari file yang tersedia. Minta konfirmasi pemilik repository dan periksa lisensi sumber dataset sebelum redistribusi.
 
 Dependency utama, font, repository, dan file data yang digunakan dicantumkan di atas sebagai credits teknis. Tidak ditemukan daftar referensi eksternal atau URL sumber data yang cukup untuk mengatribusikan dataset secara bertanggung jawab.
+
+---
+
+**Dibuat oleh:**
+* **Nama:** Xavier Yubin Raditio
+* **NIM:** 222313427
+* **Institusi:** Politeknik Statistika STIS
+* **Mata Kuliah:** Visualisasi Data dan Informasi
