@@ -252,11 +252,11 @@ Layout menggunakan utility breakpoint Tailwind serta media query CSS. Kartu hero
 - Aplikasi memerlukan browser dengan dukungan API web yang digunakan source, termasuk `fetch`, `IntersectionObserver`, dan `ResizeObserver`.
 - Tidak tersedia live demo, konfigurasi deployment, license file, atau sitasi dataset yang dapat diverifikasi di repository.
 
-## Lisensi, credits, dan referensi
+## Lisensi, Credits, dan Referensi
 
-Repository ini tidak memuat `LICENSE`/`COPYING`; hak penggunaan dan distribusi kode maupun data tidak dapat ditentukan dari file yang tersedia. Minta konfirmasi pemilik repository dan periksa lisensi sumber dataset sebelum redistribusi.
+Repositori ini tidak menyertakan file `LICENSE` atau `COPYING`. Hal tersebut membuat hak penggunaan dan distribusi kode beserta datanya tidak dapat dipastikan secara langsung. Anda disarankan untuk meminta konfirmasi dari pemilik repositori serta memeriksa lisensi asli dataset sebelum menyebarluaskannya.
 
-Dependency utama, font, repository, dan file data yang digunakan dicantumkan di atas sebagai credits teknis. Tidak ditemukan daftar referensi eksternal atau URL sumber data yang cukup untuk mengatribusikan dataset secara bertanggung jawab.
+Dependensi utama, font, repositori, dan file data pendukung telah dituliskan di atas sebagai bentuk kredit teknis. Meskipun begitu, referensi eksternal maupun tautan sumber data yang memadai untuk memberikan atribusi dataset secara bertanggung jawab belum tersedia.
 
 ---
 
