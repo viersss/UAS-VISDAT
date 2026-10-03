@@ -265,3 +265,5 @@ Dependensi utama, font, repositori, dan file data pendukung telah dituliskan di 
 * **NIM:** 222313427
 * **Institusi:** Politeknik Statistika STIS
 * **Mata Kuliah:** Visualisasi Data dan Informasi
+
+---
